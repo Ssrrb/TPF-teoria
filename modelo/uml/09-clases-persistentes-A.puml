@@ -1,0 +1,163 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 22
+skinparam ranksep 50
+hide circle
+title Clases Persistentes (A) — Obra y presupuesto
+
+package "Organización y seguridad" <<Rectangle>> {
+  class Organizacion <<persistent>> {
+  +id : UUID
+  -nombre : String
+  -pais : String
+  -moneda : String
+  }
+  class Usuario <<persistent>> {
+  +id : UUID
+  -nombre : String
+  -email : String
+  }
+  class RolAsignado <<persistent>> {
+  -rol : String
+  -vigenteDesde : Date
+  }
+  class RegistroAuditoria <<persistent>> {
+  +id : UUID
+  -entidad : String
+  -entidadId : UUID
+  -accion : String
+  -...
+  }
+}
+package "Partes" <<Rectangle>> {
+  class Cliente <<persistent>> {
+  +id : UUID
+  -formaLegal : String
+  -identificador : String
+  -nombre : String
+  }
+  class Socio <<persistent>> {
+  +id : UUID
+  -formaLegal : String
+  -identificador : String
+  -nombre : String
+  }
+}
+package "Obra y configuración" <<Rectangle>> {
+  class Obra <<persistent>> {
+  +id : UUID
+  -codigo : String
+  -nombre : String
+  -direccion : String
+  -...
+  }
+  class ConfiguracionObra <<persistent>> {
+  +id : UUID
+  -tasaIVA : Decimal
+  -moneda : String
+  -toleranciaDesvio : Decimal
+  }
+  class FondoRetencion <<persistent>> {
+  +id : UUID
+  -nombre : String
+  -porcentaje : Decimal
+  -base : String
+  -...
+  }
+}
+package "Presupuesto" <<Rectangle>> {
+  class Presupuesto <<persistent>> {
+  +id : UUID
+  -tipo : String
+  -moneda : String
+  }
+  class VersionPresupuesto <<persistent>> {
+  +id : UUID
+  -numero : Integer
+  -estado : String
+  -fechaActivacion : DateTime
+  -/montoContractual : Decimal
+  }
+  class LineaPresupuesto <<persistent>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -tipo : String
+  -/importe : Decimal
+  -/cantidadMedida : Decimal
+  -/saldo : Decimal
+  -...
+  }
+  class ArchivoOrigen <<persistent>> {
+  +id : UUID
+  -nombre : String
+  -hashSHA256 : String
+  -ruta : String
+  -...
+  }
+  class InformeImportacion <<persistent>> {
+  +id : UUID
+  -totalDeclarado : Decimal
+  -totalRecalculado : Decimal
+  -tolerancia : Decimal
+  -/diferencia : Decimal
+  -...
+  }
+  class AnalisisCostoUnitario <<persistent>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -unidad : String
+  -/costoUnitario : Decimal
+  -...
+  }
+  class ComponenteACU <<persistent>> {
+  +id : UUID
+  -via : String
+  -descripcion : String
+  -unidad : String
+  -/subtotal : Decimal
+  -...
+  }
+  class MovimientoPresupuestario <<persistent>> {
+  +id : UUID
+  -tipo : String
+  -motivo : String
+  -montoEfecto : Decimal
+  -/importeUtilizado : Decimal
+  -/saldoDisponible : Decimal
+  -...
+  }
+}
+Organizacion "1" o-- "0..*" Obra
+Organizacion "1" o-- "1..*" Usuario
+Usuario "1" *-- "0..*" RolAsignado
+Obra "1" -- "0..*" RolAsignado
+Cliente "1" -- "0..*" Obra
+Obra "1" *-- "1" ConfiguracionObra
+ConfiguracionObra "1" *-- "0..*" FondoRetencion
+Obra "1" *-- "1..*" Presupuesto
+Presupuesto "1" *-- "1..*" VersionPresupuesto
+VersionPresupuesto "1" *-- "1..*" LineaPresupuesto
+LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto
+VersionPresupuesto "1" *-- "0..1" ArchivoOrigen
+VersionPresupuesto "1" *-- "0..1" InformeImportacion
+AnalisisCostoUnitario "0..1" -- "0..*" LineaPresupuesto
+AnalisisCostoUnitario "1" *-- "1..*" ComponenteACU
+Obra "1" o-- "0..*" AnalisisCostoUnitario
+LineaPresupuesto "1" -- "0..*" MovimientoPresupuestario
+VersionPresupuesto "0..1" -- "0..*" MovimientoPresupuestario
+
+note as NDeriv
+  Los atributos con / son derivados: se calculan desde
+  los registros aprobados y no se almacenan.
+  Los puntos suspensivos indican atributos elididos; el
+  detalle completo de columnas está en el diagrama de
+  entidad relación.
+  Las clases <<referencia>> se detallan en la otra figura.
+end note
+@enduml

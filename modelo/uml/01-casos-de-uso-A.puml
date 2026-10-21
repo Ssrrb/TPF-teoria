@@ -1,0 +1,41 @@
+@startuml
+left to right direction
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam packageStyle rectangle
+skinparam nodesep 12
+skinparam ranksep 60
+title Sistema Obra Studio — Subsistema Presupuesto y Medición
+
+actor "Ingeniero de Obra" as ING
+actor "Responsable Técnico" as SUP
+actor "Administrador" as ADM
+
+rectangle "Presupuesto y Medición" {
+  usecase "CU-01\nCrear obra y asignar responsables" as CU_01
+  usecase "CU-02\nImportar presupuesto y cronograma" as CU_02
+  usecase "CU-03\nConfirmar estructura y activar versión vigente" as CU_03
+  usecase "CU-04\nRegistrar medición oficial" as CU_04
+  usecase "CU-05\nAprobar o rechazar medición oficial" as CU_05
+  usecase "CU-06\nCerrar período de medición" as CU_06
+  usecase "CU-11\nProponer y aprobar movimiento presupuestario" as CU_11
+  usecase "CU-15\nCalcular costos por vía" as CU_15
+}
+
+actor "Motor de Ingeniería" as ECMS
+
+ADM --> CU_01
+ING --> CU_02
+ADM --> CU_03
+ING --> CU_04
+SUP --> CU_05
+SUP --> CU_06
+ADM --> CU_11
+SUP --> CU_11
+ING --> CU_15
+CU_15 --> ECMS
+
+CU_02 ..> CU_03 : <<include>>
+CU_11 ..> CU_05 : <<extend>>
+@enduml

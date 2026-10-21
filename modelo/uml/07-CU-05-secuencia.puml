@@ -1,0 +1,71 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-05 — Aprobar o rechazar medición oficial
+
+actor "Responsable Técnico" as SUP
+participant "<<Boundary>>\nAprobarMedicionControlador" as CTRL
+participant "<<Control>>\nAprobarMedicionInteractor" as UC
+participant "<<Control>>\nEvaluarSaldoServicio" as SAL
+participant "<<Interface>>\nIMedicionRepositorio" as MREP
+participant "<<Interface>>\nIPresupuestoRepositorio" as PREP
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nMedicionOficial" as MED
+participant "<<Entity>>\nLineaPresupuesto" as LIN
+participant "<<Entity>>\nPropuestaPendiente" as PRO
+
+SUP -> CTRL : listarMediciones(obraId, periodoId)
+activate CTRL
+CTRL -> UC : obtenerPendientes(periodoId)
+activate UC
+UC -> MREP : listarPorPeriodo(periodoId)
+activate MREP
+MREP --> UC : mediciones registradas
+deactivate MREP
+UC --> CTRL : mediciones con cantidad, unidad, ejecutor y evidencia
+deactivate UC
+CTRL --> SUP : muestra la lista del período
+deactivate CTRL
+SUP -> CTRL : aprobarMedicion(medicionId)
+activate CTRL
+CTRL -> UC : ejecutar(medicionId, actorId)
+activate UC
+UC -> MREP : acumuladoAprobado(lineaId)
+activate MREP
+MREP --> UC : cantidadAcumulada
+deactivate MREP
+UC -> PREP : buscarVersionVigente(obraId)
+activate PREP
+PREP --> UC : VersionPresupuesto vigente
+deactivate PREP
+UC -> LIN : saldo(cantidadAcumulada)
+activate LIN
+LIN --> UC : saldo disponible
+deactivate LIN
+UC -> SAL : evaluar(cantidadMedida, saldo)
+activate SAL
+SAL --> UC : cantidadCertificable, exceso
+deactivate SAL
+alt la cantidad excede el saldo vigente (RF-09)
+  UC -> PRO ** : crear(exceso, estado = Pendiente)
+  UC -> MED : aprobar(cantidadCertificable, actorId, fecha)
+  activate MED
+  deactivate MED
+else la cantidad está cubierta por el saldo
+  UC -> MED : aprobar(cantidadMedida, actorId, fecha)
+  activate MED
+  deactivate MED
+end
+UC -> MREP : guardar(medicion)
+activate MREP
+UC -> AUD : registrar(actor, fecha, obra, version, decisión)
+activate AUD
+deactivate AUD
+deactivate MREP
+UC --> CTRL : resultado(estado, cantidadCertificable, exceso)
+deactivate UC
+CTRL --> SUP : confirma la decisión y el acumulado actualizado
+deactivate CTRL
+@enduml

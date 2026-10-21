@@ -1,0 +1,107 @@
+@startuml
+title <size:24>Container View: Obra Studio</size>\n<size:24>Estructura interna de Obra Studio.</size>
+
+set separator none
+left to right direction
+skinparam ranksep 20
+skinparam nodesep 5
+hide stereotype
+
+<style>
+  root {
+    BackgroundColor: #ffffff;
+    FontColor: #444444;
+  }
+  // Element,Container
+  .Element-RWxlbWVudCxDb250YWluZXI= {
+    BackgroundColor: #438dd5;
+    LineColor: #2e6295;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Container,Almacen
+  .Element-RWxlbWVudCxDb250YWluZXIsQWxtYWNlbg== {
+    BackgroundColor: #438dd5;
+    LineColor: #2e6295;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Person
+  .Element-RWxlbWVudCxQZXJzb24= {
+    BackgroundColor: #0b5394;
+    LineColor: #073a67;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Software System,Externo
+  .Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJubw== {
+    BackgroundColor: #8c8c8c;
+    LineColor: #626262;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Relationship
+  .Relationship-UmVsYXRpb25zaGlw {
+    LineThickness: 2;
+    LineStyle: 10-10;
+    LineColor: #444444;
+    FontColor: #444444;
+    FontSize: 24;
+    MaximumWidth: 200;
+  }
+  // Obra Studio
+  .Boundary-T2JyYSBTdHVkaW8= {
+    BackgroundColor: #ffffff;
+    LineColor: #0b4884;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+  }
+</style>
+
+person "==Ingeniero de Obra\n<size:16>[Person]</size>\n\nCarga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia y corrige los borradores devueltos." <<Element-RWxlbWVudCxQZXJzb24=>> as IngenierodeObra
+person "==Responsable Técnico\n<size:16>[Person]</size>\n\nSupervisor de la obra." <<Element-RWxlbWVudCxQZXJzb24=>> as ResponsableTécnico
+person "==Administrador\n<size:16>[Person]</size>\n\nConfigura la obra, sus impuestos y sus fondos de retención, autoriza la emisión del certificado sobre la revisión ya conformada, aprueba los movimientos presupuestarios y habilita la reapertura auditada." <<Element-RWxlbWVudCxQZXJzb24=>> as Administrador
+person "==Subcontratista\n<size:16>[Person]</size>\n\nPresenta las mediciones correspondientes a su contrato y consulta el estado de sus mediciones, certificados y saldos." <<Element-RWxlbWVudCxQZXJzb24=>> as Subcontratista
+rectangle "==Sistema ERP\n<size:16>[Software System]</size>\n\nMotor financiero y documental. Registra lo que el ECMS midió y certificó." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJubw==>> as SistemaERP
+
+rectangle "Obra Studio\n<size:16>[Software System]</size>" <<Boundary-T2JyYSBTdHVkaW8=>> {
+  rectangle "==Motor ECMS\n<size:16>[Container: TypeScript]</size>\n\nReglas de obra, presupuesto, medición y certificación." <<Element-RWxlbWVudCxDb250YWluZXI=>> as ObraStudio.MotorECMS
+  database "==Base de Datos\n<size:16>[Container: PostgreSQL]</size>\n\nObras, presupuestos, mediciones y certificados." <<Element-RWxlbWVudCxDb250YWluZXIsQWxtYWNlbg==>> as ObraStudio.BasedeDatos
+  database "==Almacén de Archivos\n<size:16>[Container: Almacenamiento de objetos]</size>\n\nPlanillas de origen, evidencias y certificados exportados." <<Element-RWxlbWVudCxDb250YWluZXIsQWxtYWNlbg==>> as ObraStudio.AlmacéndeArchivos
+  rectangle "==Aplicación Web\n<size:16>[Container: React + TypeScript]</size>\n\nPresenta los formularios de carga, medición y certificación." <<Element-RWxlbWVudCxDb250YWluZXI=>> as ObraStudio.AplicaciónWeb
+}
+
+IngenierodeObra --> ObraStudio.AplicaciónWeb <<Relationship-UmVsYXRpb25zaGlw>> : "Carga el presupuesto y registra la medición oficial\n<size:16>[HTTPS]</size>"
+ResponsableTécnico --> ObraStudio.AplicaciónWeb <<Relationship-UmVsYXRpb25zaGlw>> : "Aprueba mediciones y otorga la conformidad técnica\n<size:16>[HTTPS]</size>"
+Administrador --> ObraStudio.AplicaciónWeb <<Relationship-UmVsYXRpb25zaGlw>> : "Autoriza la emisión y aprueba movimientos presupuestarios\n<size:16>[HTTPS]</size>"
+Subcontratista --> ObraStudio.AplicaciónWeb <<Relationship-UmVsYXRpb25zaGlw>> : "Presenta las mediciones de su contrato\n<size:16>[HTTPS]</size>"
+ObraStudio.MotorECMS --> SistemaERP <<Relationship-UmVsYXRpb25zaGlw>> : "Publica el certificado aprobado para su documento financiero\n<size:16>[Evento de dominio]</size>"
+ObraStudio.AplicaciónWeb --> ObraStudio.MotorECMS <<Relationship-UmVsYXRpb25zaGlw>> : "Invoca los casos de uso\n<size:16>[HTTPS/JSON]</size>"
+ObraStudio.MotorECMS --> ObraStudio.BasedeDatos <<Relationship-UmVsYXRpb25zaGlw>> : "Lee y escribe\n<size:16>[SQL]</size>"
+ObraStudio.MotorECMS --> ObraStudio.AlmacéndeArchivos <<Relationship-UmVsYXRpb25zaGlw>> : "Conserva planillas, evidencias y exportaciones\n<size:16>[API de objetos]</size>"
+
+@enduml

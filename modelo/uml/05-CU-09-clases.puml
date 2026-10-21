@@ -1,0 +1,136 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-09 — Emitir certificado de avance
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class EmitirCertificadoControlador <<Boundary>> {
+    +abrirRevision(revisionId)
+    +otorgarConformidadTecnica(revisionId)
+    +autorizarEmision(revisionId)
+  }
+  class CertificadoPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class EmitirCertificadoInteractor <<Control>> {
+    +obtenerRevision(revisionId)
+    +registrarAprobacion(revisionId, actorId, CONFORMIDAD_TECNICA)
+    +emitir(revisionId, actorId)
+  }
+  class VerificarSeparacionFuncionesServicio <<Control>> {
+    +verificar(aprobaciones, actorId)
+  }
+  class CalcularValorizacionServicio <<Control>> {
+    +calcular(lineas, configuracionObra)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Certificado <<Entity>> {
+  +id : UUID
+  -numero : String
+  -tipo : String
+  -fechaEmision : Date
+  -...
+    --
+    +aprobar(numero, fecha, destinatario)
+  }
+  class RevisionCertificado <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -fechaGeneracion : DateTime
+  -subtotal : Decimal
+  -/impuestos : Decimal
+  -/retenciones : Decimal
+  -/total : Decimal
+    --
+    +aprobaciones()
+  }
+  class LineaCertificado <<Entity>> {
+  +id : UUID
+  -cantidadPeriodo : Decimal
+  -precioUnitario : Decimal
+  -/importe : Decimal
+  -/cantidadAcumulada : Decimal
+  }
+  class Aprobacion <<Entity>> {
+  +id : UUID
+  -tipo : String
+  -fecha : DateTime
+  -observacion : String
+    --
+    +crear(tipo, actorId, fecha)
+  }
+  class RetencionAplicada <<Entity>> {
+  +id : UUID
+  -porcentaje : Decimal
+  -base : Decimal
+  -/importe : Decimal
+  }
+  class ConfiguracionObra <<Entity>> {
+  +id : UUID
+  -tasaIVA : Decimal
+  -moneda : String
+  -toleranciaDesvio : Decimal
+  }
+  class FondoRetencion <<Entity>> {
+  +id : UUID
+  -nombre : String
+  -porcentaje : Decimal
+  -base : String
+  -...
+  }
+  class Valorizacion <<ValueObject>> {
+  -subtotal : Decimal
+  -impuestos : Decimal
+  -retenciones : Decimal
+  -...
+  }
+  interface ICertificadoRepositorio <<Interface>> {
+  +buscarRevision(revisionId)
+  +guardar(certificado)
+  +siguienteNumero(obraId)
+  }
+  interface IGeneradorDocumento <<Interface>> {
+  +exportar(revision, formato)
+  }
+  interface IPublicadorEventos <<Interface>> {
+  +publicar(evento)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+  interface IReloj <<Interface>> {
+  +ahora()
+  }
+}
+
+EmitirCertificadoControlador --> EmitirCertificadoInteractor
+EmitirCertificadoInteractor --> VerificarSeparacionFuncionesServicio
+EmitirCertificadoInteractor --> CalcularValorizacionServicio
+EmitirCertificadoInteractor ..> CertificadoPresentador
+EmitirCertificadoInteractor ..> ICertificadoRepositorio
+EmitirCertificadoInteractor ..> IGeneradorDocumento
+EmitirCertificadoInteractor ..> IPublicadorEventos
+EmitirCertificadoInteractor ..> IAuditoriaRepositorio
+EmitirCertificadoInteractor ..> IReloj
+EmitirCertificadoInteractor ..> Certificado
+ConfiguracionObra "1" *-- "0..*" FondoRetencion
+Certificado "1" *-- "1..*" RevisionCertificado
+RevisionCertificado "1" *-- "1..*" LineaCertificado
+RevisionCertificado "0..1" *-- "0..*" Aprobacion
+RevisionCertificado "1" *-- "0..*" RetencionAplicada
+FondoRetencion "1" -- "0..*" RetencionAplicada
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

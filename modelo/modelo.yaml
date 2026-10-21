@@ -1,0 +1,1386 @@
+# ==============================================================================
+# Obra Studio — Modelo de Análisis y Diseño
+# FUENTE ÚNICA DE VERDAD. Todo diagrama, tabla y matriz se genera desde aquí.
+# No editar los archivos de modelo/uml/ ni los fragmentos .md: se sobrescriben.
+# ==============================================================================
+
+meta:
+  institucion: Universidad Católica Nuestra Señora de la Asunción
+  facultad: Facultad de Ciencias y Tecnología
+  departamento: Departamento de Análisis de Sistemas
+  carrera: Carrera de Análisis de Sistemas Informáticos
+  catedra: Cátedra de Ingeniería del Software 2
+  materia: Ingeniería del Software 2
+  trabajo: Trabajo Práctico Final
+  sistema: Obra Studio
+  organizacion: Cuatro Projects S.R.L.
+  docente: Dr. Emilio Gutiérrez Rodríguez
+  ciudad: Asunción - Paraguay
+  fecha: junio 2026
+  version: "1.0"
+  autores:
+    - { nombre: "Rojas, Sebastián" }
+    - { nombre: "Taveira" }
+    - { nombre: "Scotover" }
+
+# ------------------------------------------------------------------------------
+# Alcance: módulos de Obra Studio que este modelo desarrolla.
+# ------------------------------------------------------------------------------
+alcance:
+  incluidos:
+    - { codigo: ecms.budgets,        nombre: Presupuestos }
+    - { codigo: ecms.acu,            nombre: Análisis de Costo Unitario }
+    - { codigo: ecms.certifications, nombre: Certificaciones }
+    - { codigo: ecms.subcontracts,   nombre: Subcontratos }
+    - { codigo: erp.invoices,        nombre: Facturas }
+    - { codigo: erp.payments,        nombre: Pagos }
+  excluidos:
+    - { codigo: ecms.stock,     motivo: "PR-07 excluye la operación de inventario y almacén." }
+    - { codigo: ecms.rrhh,      motivo: "Fuera del alcance de presupuesto, medición y certificación." }
+    - { codigo: ecms.partes,    motivo: "La vía C del motor de costos se documenta sin desarrollar partes diarios." }
+    - { codigo: erp.petty-cash, motivo: "Compras menores no intervienen en la cadena de certificación." }
+    - { codigo: erp.finance,    motivo: "Contabilidad y tesorería se tratan como contexto de interacción ERP." }
+
+# ------------------------------------------------------------------------------
+# Vocabulario. Gobierna los nombres usados en TODOS los diagramas.
+# clase = nombre en el modelo; implementacion = contraparte en el código real.
+# ------------------------------------------------------------------------------
+vocabulario:
+  - { termino: Obra,                      gloss: work site,              clase: Obra,                      implementacion: "projects (fila)" }
+  - { termino: Presupuesto,               gloss: budget,                 clase: Presupuesto,               implementacion: "ProjectFile / budgets" }
+  - { termino: Versión de presupuesto,    gloss: budget version,         clase: VersionPresupuesto,        implementacion: "budgets.revision + budget_operations" }
+  - { termino: Rubro,                     gloss: chapter,                clase: LineaPresupuesto,          implementacion: "CostItem.rowType='chapter'" }
+  - { termino: Ítem,                      gloss: budget line,            clase: LineaPresupuesto,          implementacion: "CostItem.rowType='begrotingspost'" }
+  - { termino: ACU,                       gloss: unit cost analysis,     clase: AnalisisCostoUnitario,     implementacion: "CostItem.acu + calculateAcu()" }
+  - { termino: Medición oficial,          gloss: official measurement,   clase: MedicionOficial,           implementacion: "no implementado (especificado)" }
+  - { termino: Período,                   gloss: period,                 clase: Periodo,                   implementacion: "no implementado (especificado)" }
+  - { termino: Certificado de avance,     gloss: advance certificate,    clase: Certificado,               implementacion: "no implementado (especificado)" }
+  - { termino: Valorización,              gloss: valuation,              clase: Valorizacion,              implementacion: "extiende el wiki: importe calculado del certificado" }
+  - { termino: Movimiento presupuestario, gloss: budget movement,        clase: MovimientoPresupuestario,  implementacion: "budgets kind='adendas', capítulo AD-N" }
+  - { termino: Subcontrato,               gloss: subcontract,            clase: Subcontrato,               implementacion: "no implementado (especificado)" }
+  - { termino: Socio,                     gloss: partner,                clase: Socio,                     implementacion: "no implementado (especificado)" }
+  - { termino: Curva S,                   gloss: S-curve,                clase: "—",                       derivado_de: [LineaCertificado, VersionPresupuesto, Periodo], implementacion: "extiende el wiki: reporte derivado, sin tabla propia" }
+  - { termino: Fondo de reparo,           gloss: retention fund,         clase: RetencionAplicada,         implementacion: "no implementado (especificado)" }
+
+# ------------------------------------------------------------------------------
+# ACTORES. Un id, un nombre. Todo diagrama los referencia por id.
+# tipo: primario | externo | sistema
+# ------------------------------------------------------------------------------
+actores:
+  - id: ING
+    nombre: Ingeniero de Obra
+    tipo: primario
+    descripcion: >-
+      Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem
+      del período con su evidencia y corrige los borradores devueltos. No aprueba su propia medición.
+  - id: SUP
+    nombre: Responsable Técnico
+    tipo: primario
+    descripcion: >-
+      Supervisor de la obra. Aprueba o rechaza cada medición oficial, cierra el período y otorga la
+      conformidad técnica sobre la revisión del certificado. No puede autorizar la emisión que él mismo conformó.
+  - id: ADM
+    nombre: Administrador
+    tipo: primario
+    descripcion: >-
+      Configura la obra, sus impuestos y sus fondos de retención, autoriza la emisión del certificado
+      sobre la revisión ya conformada, aprueba los movimientos presupuestarios y habilita la reapertura auditada.
+  - id: SUB
+    nombre: Subcontratista
+    tipo: primario
+    externo: true
+    descripcion: >-
+      Presenta las mediciones correspondientes a su contrato y consulta el estado de sus mediciones,
+      certificados y saldos. No accede a información de otros contratos ni a datos internos de la obra.
+  - id: CLI
+    nombre: Cliente
+    tipo: secundario
+    externo: true
+    descripcion: >-
+      Comitente de la obra. Recibe el certificado de avance emitido y la factura que el ERP deriva de él.
+  - id: ECMS
+    nombre: Motor de Ingeniería
+    tipo: sistema
+    descripcion: >-
+      Motor de obra de Obra Studio. Calcula los costos por vía de material, mano de obra y equipo a
+      partir del análisis de costo unitario, y publica el certificado aprobado para que el ERP
+      derive su documento financiero. Es la fuente de verdad de la medición.
+  - id: ERP
+    nombre: Sistema ERP
+    tipo: sistema
+    descripcion: >-
+      Motor financiero y documental. Recibe los certificados aprobados y genera la factura al cliente
+      o el pago al subcontratista. Es dueño de los documentos legales; no calcula costo de obra.
+  - id: TES
+    nombre: Finanzas y Tesorería
+    tipo: secundario
+    descripcion: >-
+      Opera dentro del ERP. Aprueba y ejecuta pagos y registra cobros a partir de los documentos
+      derivados de un certificado aprobado.
+
+# ------------------------------------------------------------------------------
+# REQUISITOS. 48 identificadores: RF-01..28, RNF-01..12, PR-01..08.
+# casos_uso[] es la trazabilidad; de aquí sale la matriz. No duplicar en prosa.
+# ------------------------------------------------------------------------------
+requisitos:
+  # --- Funcionales -------------------------------------------------------------
+  - id: RF-01
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá crear una obra con datos identificatorios y asignar sus responsables.
+    criterio: Cada obra queda asociada a responsables y organización.
+    casos_uso: [CU-01]
+  - id: RF-02
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema permitirá cargar el XLSX de presupuesto y cronograma y conservar el archivo
+      original asociado a su versión.
+    criterio: Se recupera el archivo de origen de una versión.
+    casos_uso: [CU-02]
+  - id: RF-03
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema identificará hojas, columnas y relaciones entre rubros e ítems e informará cada
+      dato obligatorio inválido con su ubicación.
+    criterio: El error señala hoja, fila y columna.
+    casos_uso: [CU-02]
+  - id: RF-04
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema mostrará diferencias entre totales declarados en el XLSX y totales recalculados,
+      sin modificar el archivo original.
+    criterio: El usuario revisa ambos totales antes de confirmar.
+    casos_uso: [CU-02]
+  - id: RF-05
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá confirmar rubros, unidades y agrupaciones antes de activar el
+      presupuesto de una obra.
+    criterio: La versión no se activa sin confirmación de estructura.
+    casos_uso: [CU-03]
+  - id: RF-06
+    tipo: RF
+    origen: Wiki + Complemento
+    enunciado: >-
+      El sistema conservará versiones del presupuesto y cronograma; cada modificación aprobada
+      generará una versión nueva sin alterar anteriores.
+    criterio: Se consulta la versión anterior y la nueva vigente.
+    casos_uso: [CU-02, CU-11]
+  - id: RF-07
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá registrar por período una medición oficial por ítem con cantidad,
+      unidad, ejecutor propio o subcontratado y evidencia.
+    criterio: El registro conserva todos esos datos y su respaldo.
+    casos_uso: [CU-04]
+  - id: RF-08
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá al responsable técnico aprobar o rechazar cada medición y conservar
+      decisión, actor y fecha.
+    criterio: La decisión queda en el historial.
+    casos_uso: [CU-05]
+  - id: RF-09
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema comparará la cantidad medida con el saldo del presupuesto vigente; el exceso
+      quedará como propuesta pendiente y no formará parte de la medición oficial ni del
+      certificado hasta que un movimiento aprobado lo cubra.
+    criterio: Solo una cantidad cubierta por la versión vigente integra la medición oficial certificable.
+    casos_uso: [CU-05, CU-07, CU-11]
+  - id: RF-10
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema impedirá contabilizar dos veces una misma cantidad de trabajo físico aunque la
+      ejecute un subcontratista.
+    criterio: El acumulado físico se incrementa una sola vez.
+    casos_uso: [CU-04, CU-14]
+  - id: RF-11
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá cerrar un período cuando sus mediciones estén resueltas y aprobadas.
+    criterio: Un período con mediciones pendientes no se cierra.
+    casos_uso: [CU-06]
+  - id: RF-12
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema generará el borrador de certificado con cantidades medidas y aprobadas que sean
+      elegibles según el presupuesto vigente.
+    criterio: El borrador excluye cantidades sin aprobación o sin saldo.
+    casos_uso: [CU-07]
+  - id: RF-13
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema calculará la valorización con cantidad certificable y precio de venta vigente, y
+      aplicará impuestos y fondos según la configuración de la obra.
+    criterio: Subtotal, impuestos y retenciones se reproducen desde su configuración.
+    casos_uso: [CU-07]
+  - id: RF-14
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema mostrará la cantidad medida del período, las mediciones oficiales aprobadas
+      acumuladas y el saldo del presupuesto vigente; cada certificado conservará el vínculo con su
+      documento financiero ERP derivado.
+    criterio: El acumulado físico coincide con las mediciones aprobadas y cada factura refiere a su certificado sin duplicarlo.
+    casos_uso: [CU-07, CU-10]
+  - id: RF-15
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema señalará en el borrador excesos, mediciones faltantes, precios sin movimiento
+      vigente y diferencias de totales con sus datos de origen.
+    criterio: Cada alerta identifica rubro o ítem y su fuente.
+    casos_uso: [CU-07]
+  - id: RF-16
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá devolver un borrador para corrección y conservará revisiones y
+      decisiones anteriores.
+    criterio: La corrección mantiene vínculo con el antecedente.
+    casos_uso: [CU-08]
+  - id: RF-17
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema exigirá conformidad técnica y autorización de una persona distinta sobre la misma
+      revisión antes de emitir el certificado de avance.
+    criterio: La emisión se bloquea si falta una aprobación o ambas son del mismo actor.
+    casos_uso: [CU-09]
+  - id: RF-18
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá registrar número, fecha, destinatario y revisión del certificado, y
+      exportar un archivo nuevo XLSX o PDF.
+    criterio: El archivo corresponde a la revisión emitida y no sobrescribe sus fuentes.
+    casos_uso: [CU-09, CU-10]
+  - id: RF-19
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá proponer ampliaciones, deducciones y variaciones de precio asociadas a
+      rubros o ítems, con motivo y respaldo.
+    criterio: El movimiento identifica tipo, objetivo, motivo y documento.
+    casos_uso: [CU-11]
+  - id: RF-20
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema mostrará efecto monetario, límite, importe utilizado y saldo de cada propuesta, e
+      impedirá aprobar datos incompletos o un exceso sin excepción registrada.
+    criterio: Datos faltantes o exceso no autorizado impiden aprobar.
+    casos_uso: [CU-11]
+  - id: RF-21
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema registrará por separado las aprobaciones interna y contractual de un movimiento
+      presupuestario y solo entonces actualizará la versión vigente.
+    criterio: Una sola aprobación no activa la versión.
+    casos_uso: [CU-11]
+  - id: RF-22
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema certificará cantidades pendientes solo después de que un movimiento aprobado las
+      cubra; corregirá un certificado cerrado mediante reapertura autorizada y auditada, creando
+      una revisión vinculada y preservando el original.
+    criterio: La nueva cantidad usa la versión vigente y la revisión corregida conserva el vínculo con el original.
+    casos_uso: [CU-09, CU-11]
+  - id: RF-23
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá registrar en ERP el contrato legal y vincularlo con el alcance técnico,
+      rubros, precios, límites, impuestos y retenciones de la obra.
+    criterio: Contrato ERP y alcance ECMS permanecen relacionados.
+    casos_uso: [CU-12]
+  - id: RF-24
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá al subcontratista presentar mediciones de su contrato y consultar solo
+      el estado de sus mediciones, certificados, valorizaciones y saldos.
+    criterio: No puede registrar rubros ajenos ni consultar otro contrato.
+    casos_uso: [CU-13]
+  - id: RF-25
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema valorizará el certificado de subcontratista según el contrato, registrará esa
+      valorización en el control de costos de ECMS y enviará el resultado aprobado a ERP para el
+      proceso de pago, sin cambiar el precio de venta al cliente.
+    criterio: Costo analítico, valorización contractual, precio de venta y pago se presentan por separado.
+    casos_uso: [CU-14]
+  - id: RF-26
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema calculará costos por obra, rubro e ítem mediante materiales, mano de obra y
+      equipos, y comparará los resultados con el presupuesto vigente, que refleja los movimientos
+      aprobados.
+    criterio: Cada importe identifica vía, período, fuente y naturaleza; el movimiento modifica el plan y no se registra como costo incurrido.
+    casos_uso: [CU-15]
+  - id: RF-27
+    tipo: RF
+    origen: Complemento
+    enunciado: >-
+      El sistema mostrará Curva S a una misma fecha de corte y separará avance físico, financiero
+      y físico pendiente de movimiento presupuestario vigente.
+    criterio: Las tres series comparten fecha y explican unidad y ponderación.
+    casos_uso: [CU-16]
+  - id: RF-28
+    tipo: RF
+    origen: Wiki
+    enunciado: >-
+      El sistema permitirá consultar presupuesto vigente, costos propios y subcontratados,
+      certificaciones y saldos por obra y rubro, con acceso a cada respaldo.
+    criterio: Cada cifra conduce a su registro o documento fuente.
+    casos_uso: [CU-16]
+
+  # --- No funcionales ----------------------------------------------------------
+  - id: RNF-01
+    tipo: RNF
+    origen: Wiki
+    enunciado: >-
+      El sistema comprobará organización, pertenencia a la obra y rol antes de permitir leer o
+      modificar información.
+    criterio: Una cuenta sin permiso vigente no accede al registro.
+    casos_uso: [CU-01, CU-02, CU-03, CU-04, CU-05, CU-06, CU-07, CU-08, CU-09, CU-10, CU-11, CU-12, CU-13, CU-14, CU-15, CU-16]
+  - id: RNF-02
+    tipo: RNF
+    origen: Wiki
+    enunciado: >-
+      La vista del subcontratista se limitará a su contrato; no mostrará presupuestos internos,
+      márgenes, salarios ni otros contratos.
+    criterio: Consultas fuera del contrato se deniegan.
+    casos_uso: [CU-13, CU-14]
+  - id: RNF-03
+    tipo: RNF
+    origen: Wiki
+    enunciado: >-
+      Una operación interrumpida no dejará un período parcialmente cerrado ni una modificación
+      activa sin las aprobaciones requeridas.
+    criterio: La operación queda en estado íntegro anterior o completo.
+    casos_uso: [CU-06, CU-11]
+  - id: RNF-04
+    tipo: RNF
+    origen: Wiki
+    enunciado: >-
+      El sistema conservará actor, fecha, obra, versión y evidencia para cada medición, revisión,
+      aprobación, emisión y cambio relevante.
+    criterio: El historial permite reconstruir quién hizo qué y sobre qué versión.
+    casos_uso: [CU-04, CU-05, CU-06, CU-07, CU-08, CU-09, CU-10, CU-11, CU-12, CU-13, CU-14]
+  - id: RNF-05
+    tipo: RNF
+    origen: Wiki
+    enunciado: >-
+      Los certificados cerrados y las versiones que los originaron permanecerán consultables; una
+      corrección requiere reapertura autorizada, auditoría y revisión nueva.
+    criterio: El original no se sobrescribe y la corrección queda enlazada.
+    casos_uso: [CU-09]
+  - id: RNF-06
+    tipo: RNF
+    origen: Wiki
+    enunciado: >-
+      Los cálculos monetarios usarán aritmética decimal y producirán el mismo resultado para
+      iguales entradas, parámetros y versiones.
+    criterio: Repetir el cálculo con la misma instantánea devuelve el mismo importe.
+    casos_uso: [CU-07, CU-14, CU-15]
+  - id: RNF-07
+    tipo: RNF
+    origen: Complemento
+    enunciado: >-
+      Volver a cargar el mismo XLSX sin cambios no creará otra versión de presupuesto o cronograma.
+    criterio: La repetición refiere la versión existente.
+    casos_uso: [CU-02]
+  - id: RNF-08
+    tipo: RNF
+    origen: Complemento
+    enunciado: >-
+      Las copias de seguridad permitirán restaurar conjuntamente registros, adjuntos y versiones
+      de una obra.
+    criterio: La restauración recupera relaciones y archivos.
+    casos_uso: [CU-02, CU-07, CU-14]
+  - id: RNF-09
+    tipo: RNF
+    origen: Complemento
+    enunciado: >-
+      Los formularios de medición podrán utilizarse desde un teléfono e identificar campos
+      requeridos y errores de carga.
+    criterio: El escenario de medición puede completarse desde vista móvil.
+    casos_uso: [CU-04, CU-13]
+  - id: RNF-10
+    tipo: RNF
+    origen: Complemento
+    enunciado: >-
+      Las operaciones principales podrán completarse con teclado, foco visible y mensajes de error
+      identificables.
+    criterio: El recorrido de teclado completa y comunica el flujo principal.
+    casos_uso: [CU-02, CU-04, CU-05, CU-07]
+  - id: RNF-11
+    tipo: RNF
+    origen: Wiki
+    enunciado: >-
+      Los reportes indicarán fecha de corte, unidad, moneda y procedencia de cada total.
+    criterio: Ningún total carece de contexto de lectura.
+    casos_uso: [CU-10, CU-15, CU-16]
+  - id: RNF-12
+    tipo: RNF
+    origen: Wiki
+    enunciado: >-
+      Toda certificación o valorización consultable permitirá recuperar presupuesto, mediciones y
+      documentos usados para calcularla.
+    criterio: Desde el registro se llega a sus fuentes y adjuntos.
+    casos_uso: [CU-07, CU-09, CU-14]
+
+  # --- Restricciones de plataforma y alcance -----------------------------------
+  - id: PR-01
+    tipo: PR
+    origen: Complemento
+    enunciado: >-
+      La primera versión será una aplicación web en español.
+    criterio: Interfaz, mensajes y documentos de usuario se presentan en español.
+    casos_uso: [CU-01, CU-02, CU-03, CU-04, CU-05, CU-06, CU-07, CU-08, CU-09, CU-10, CU-11, CU-12, CU-13, CU-14, CU-15, CU-16]
+  - id: PR-02
+    tipo: PR
+    origen: Wiki
+    enunciado: >-
+      La solución servirá inicialmente a una constructora y respetará la organización por empresa,
+      workspace o proyecto y obra de Obra Studio.
+    criterio: Los datos se consultan dentro de la organización y las obras pertenecen a su agrupador.
+    casos_uso: [CU-01, CU-16]
+  - id: PR-03
+    tipo: PR
+    origen: Complemento
+    enunciado: >-
+      La moneda operativa inicial será guaraní paraguayo (PYG).
+    criterio: Los importes se rotulan y calculan en PYG.
+    casos_uso: [CU-07, CU-14, CU-15]
+  - id: PR-04
+    tipo: PR
+    origen: Wiki + Complemento
+    enunciado: >-
+      El presupuesto y el cronograma podrán ingresar por XLSX; las exportaciones se generarán como
+      archivos nuevos.
+    criterio: El origen permanece preservado y cada exportación es independiente.
+    casos_uso: [CU-02, CU-09]
+  - id: PR-05
+    tipo: PR
+    origen: Wiki
+    enunciado: >-
+      La integración entre ECMS y ERP seguirá el puente y eventos definidos en Obra Studio; no se
+      añadirán conectores externos fuera del alcance de módulos.
+    criterio: Certificados aprobados originan registros ERP relacionados.
+    casos_uso: [CU-10, CU-14]
+  - id: PR-06
+    tipo: PR
+    origen: Wiki
+    enunciado: >-
+      ERP mantendrá facturas y pagos derivados de certificados aprobados; ECMS no será dueño de
+      los documentos financieros ni de la ejecución de pagos.
+    criterio: El documento financiero queda en ERP y refiere al certificado ECMS.
+    casos_uso: [CU-10, CU-14]
+  - id: PR-07
+    tipo: PR
+    origen: Wiki
+    enunciado: >-
+      El análisis de costo utilizará las vías de materiales, mano de obra y equipos de ACU y
+      motor; este trabajo no desarrolla la operación completa de inventario o almacén.
+    criterio: Los costos muestran sus componentes y fuente sin simular movimientos de stock fuera de alcance.
+    casos_uso: [CU-15]
+  - id: PR-08
+    tipo: PR
+    origen: Complemento
+    enunciado: >-
+      Toda asistencia de IA para redactar o explicar requerirá verificación y decisión humana; los
+      importes procederán de reglas deterministas.
+    criterio: La IA no aprueba, no registra mediciones ni fija importes oficiales.
+    casos_uso: [CU-07, CU-09, CU-11]
+
+# ------------------------------------------------------------------------------
+# CASOS DE USO. detallado:true => genera especificación + clases + secuencia.
+# relaciones: include (base -> incluido) / extend (extensor -> base)
+# ------------------------------------------------------------------------------
+casos_uso:
+  - id: CU-01
+    nombre: Crear obra y asignar responsables
+    subsistema: A
+    actores: [ADM]
+    detallado: false
+  - id: CU-02
+    nombre: Importar presupuesto y cronograma
+    subsistema: A
+    actores: [ING]
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-06-01"
+    modificado_por: "Taveira"
+    fecha_modificacion: "2026-06-15"
+    descripcion: >-
+      El Ingeniero de Obra carga el archivo XLSX de presupuesto y cronograma de una obra. El
+      sistema reconoce su estructura, contrasta los totales declarados contra los recalculados,
+      informa los datos inválidos y, tras la confirmación del actor, registra una versión nueva
+      conservando el archivo original y las versiones anteriores.
+    precondiciones:
+      - La obra existe y el actor tiene un rol vigente sobre ella.
+      - El archivo contiene las hojas de presupuesto y de cronograma.
+    poscondiciones:
+      - Queda registrada una versión de presupuesto nueva con su archivo de origen y su informe de importación.
+      - Las versiones anteriores permanecen consultables y sin alteración.
+      - Si el archivo ya fue importado, no se crea una versión nueva.
+    flujo:
+      - { actor: ING, accion: "Selecciona la obra y solicita importar el presupuesto.", respuesta: "Presenta el formulario de carga y la lista de versiones registradas de la obra." }
+      - { actor: ING, accion: "Adjunta el archivo XLSX de presupuesto y cronograma.", respuesta: "Calcula el hash SHA-256 del contenido y comprueba que no corresponda a una versión ya registrada." }
+      - { actor: ING, accion: "Confirma la carga.", respuesta: "Identifica hojas y columnas, reconoce rubros, subrubros e ítems, conserva el archivo original sin modificarlo y recalcula los totales." }
+      - { actor: ING, accion: "Revisa la estructura reconocida y la comparación de totales.", respuesta: "Muestra el total declarado y el total recalculado por rubro y general, y señala cada dato obligatorio inválido indicando hoja, fila y columna." }
+      - { actor: ING, accion: "Confirma rubros, unidades y agrupaciones.", respuesta: "Registra una versión de presupuesto nueva con su archivo de origen y su informe de importación." }
+      - { actor: ING, accion: "Solicita activar la versión.", respuesta: "Incluye CU-03: valida la estructura confirmada y deja la versión como vigente, conservando las anteriores." }
+    excepciones:
+      - { id: E1, requisito: RF-03, texto: "Dato obligatorio inválido: el sistema informa hoja, fila y columna, no registra versión y permite corregir el archivo y reintentar." }
+      - { id: E2, requisito: RNF-07, texto: "Archivo ya importado: el hash coincide con una versión existente; el sistema no crea una versión nueva y refiere la versión que corresponde a ese archivo." }
+      - { id: E3, requisito: RF-04, texto: "Diferencia entre el total declarado y el recalculado: el sistema exige confirmación explícita; sin confirmación descarta la importación y no registra versión." }
+      - { id: E4, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la operación y registra el intento." }
+      - { id: E5, requisito: RNF-03, texto: "Operación interrumpida: no queda una versión parcial; la obra conserva íntegra su versión vigente anterior." }
+  - id: CU-03
+    nombre: Confirmar estructura y activar versión vigente
+    subsistema: A
+    actores: [ADM]
+    detallado: false
+  - id: CU-04
+    nombre: Registrar medición oficial
+    subsistema: A
+    actores: [ING]
+    detallado: false
+  - id: CU-05
+    nombre: Aprobar o rechazar medición oficial
+    subsistema: A
+    actores: [SUP]
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-06-01"
+    modificado_por: "Scotover"
+    fecha_modificacion: "2026-06-15"
+    descripcion: >-
+      El Responsable Técnico revisa cada medición oficial registrada en el período, la contrasta
+      con el saldo del presupuesto vigente y la aprueba o la rechaza. La cantidad cubierta por el
+      saldo queda certificable; el exceso queda como propuesta pendiente hasta que un movimiento
+      presupuestario aprobado lo cubra.
+    precondiciones:
+      - Existe al menos una medición oficial registrada en el período.
+      - El actor tiene rol de Responsable Técnico vigente sobre la obra.
+      - El actor es distinto de quien registró la medición.
+    poscondiciones:
+      - Cada medición queda aprobada o rechazada, con decisión, actor, fecha y versión de presupuesto.
+      - El acumulado físico del ítem se incrementa una sola vez por la cantidad aprobada.
+      - La cantidad que excede el saldo queda registrada como propuesta pendiente y no es certificable.
+    flujo:
+      - { actor: SUP, accion: "Selecciona la obra y el período a revisar.", respuesta: "Lista las mediciones registradas con su cantidad, unidad, ejecutor propio o subcontratado y evidencia adjunta." }
+      - { actor: SUP, accion: "Abre una medición y revisa su evidencia.", respuesta: "Muestra la cantidad del período, las mediciones aprobadas acumuladas y el saldo del presupuesto vigente para ese ítem." }
+      - { actor: SUP, accion: "Aprueba la medición.", respuesta: "Compara la cantidad medida con el saldo de la versión vigente y determina la cantidad certificable." }
+      - { actor: SUP, accion: "Confirma la decisión.", respuesta: "Registra la medición como aprobada con decisión, actor, fecha y versión, e incrementa el acumulado físico una sola vez." }
+      - { actor: SUP, accion: "Repite la revisión para las mediciones restantes del período.", respuesta: "Actualiza el estado del período y habilita su cierre cuando no quedan mediciones pendientes." }
+    excepciones:
+      - { id: E1, requisito: RF-09, texto: "La cantidad supera el saldo del presupuesto vigente: el sistema aprueba solo la parte cubierta y registra el exceso como propuesta pendiente, que no integra la medición oficial certificable hasta que un movimiento aprobado la cubra." }
+      - { id: E2, requisito: RF-08, texto: "Rechazo: el actor indica el motivo; el sistema registra la medición como rechazada con decisión, actor y fecha, y la devuelve al Ingeniero de Obra." }
+      - { id: E3, requisito: RF-10, texto: "Cantidad ya contabilizada: el sistema impide registrar una segunda medición para el mismo ítem y período, aunque la ejecute un subcontratista." }
+      - { id: E4, requisito: RNF-01, texto: "El actor coincide con quien registró la medición o carece de rol vigente: el sistema deniega la aprobación." }
+      - { id: E5, requisito: RNF-03, texto: "Operación interrumpida: la medición conserva íntegro su estado anterior y el período no queda parcialmente resuelto." }
+  - id: CU-06
+    nombre: Cerrar período de medición
+    subsistema: A
+    actores: [SUP]
+    detallado: false
+  - id: CU-07
+    nombre: Generar borrador de certificado
+    subsistema: B
+    actores: [ING]
+    detallado: false
+  - id: CU-08
+    nombre: Devolver borrador para corrección
+    subsistema: B
+    actores: [SUP]
+    detallado: false
+  - id: CU-09
+    nombre: Emitir certificado de avance
+    subsistema: B
+    actores: [SUP, ADM, CLI]
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-06-01"
+    modificado_por: "Taveira"
+    fecha_modificacion: "2026-06-15"
+    descripcion: >-
+      El Responsable Técnico otorga la conformidad técnica sobre la revisión del certificado y el
+      Administrador, que debe ser una persona distinta, autoriza su emisión. El sistema asigna
+      número, fecha y destinatario, genera el archivo exportado de la revisión emitida y publica el
+      evento que el ERP consume para registrar el documento financiero derivado.
+    precondiciones:
+      - Existe una revisión de certificado generada a partir de mediciones aprobadas y elegibles.
+      - El período del certificado está cerrado.
+      - La configuración de impuestos y fondos de la obra está vigente.
+    poscondiciones:
+      - El certificado queda aprobado con número, fecha, destinatario y revisión identificada.
+      - Queda registrada la conformidad técnica y la autorización, cada una con su actor y fecha.
+      - Se genera un archivo nuevo de exportación y el evento que vincula el certificado con su documento financiero ERP.
+    flujo:
+      - { actor: SUP, accion: "Abre la revisión del certificado del período.", respuesta: "Muestra las cantidades certificables, la valorización con precio de venta vigente, impuestos, fondos y las alertas del borrador." }
+      - { actor: SUP, accion: "Otorga la conformidad técnica sobre la revisión.", respuesta: "Registra la conformidad con su actor y su fecha, asociada a esa revisión." }
+      - { actor: ADM, accion: "Abre la misma revisión y verifica la valorización.", respuesta: "Comprueba que exista conformidad técnica y que su actor sea distinto de quien autoriza." }
+      - { actor: ADM, accion: "Autoriza la emisión.", respuesta: "Asigna número y fecha, registra el destinatario y deja el certificado aprobado sobre esa revisión." }
+      - { actor: ADM, accion: "Solicita la exportación del certificado.", respuesta: "Genera un archivo nuevo en formato XLSX o PDF correspondiente a la revisión emitida, sin sobrescribir sus fuentes." }
+      - { actor: ADM, accion: "Confirma la emisión.", respuesta: "Incluye CU-10: publica el evento de certificado aprobado para que el ERP registre el documento financiero vinculado y lo remita al Cliente." }
+    excepciones:
+      - { id: E1, requisito: RF-17, texto: "Falta la conformidad técnica o la autorización, o ambas corresponden al mismo actor: el sistema bloquea la emisión e indica cuál aprobación falta." }
+      - { id: E2, requisito: RF-16, texto: "Devolución para corrección: extiende CU-08; el sistema conserva la revisión y sus decisiones anteriores y vincula la corrección con su antecedente." }
+      - { id: E3, requisito: RF-22, texto: "Corrección de un certificado ya cerrado: requiere reapertura autorizada y auditada; el sistema crea una revisión vinculada y preserva el original sin sobrescribirlo." }
+      - { id: E4, requisito: RF-09, texto: "Cantidad pendiente sin cobertura: no integra el certificado hasta que un movimiento presupuestario aprobado la cubra." }
+      - { id: E5, requisito: RNF-06, texto: "Recálculo: repetir el cálculo con la misma instantánea de cantidades, precios y parámetros devuelve exactamente el mismo importe." }
+  - id: CU-10
+    nombre: Derivar documento financiero en ERP
+    subsistema: B
+    actores: [ECMS, ERP, TES]
+    detallado: false
+  - id: CU-11
+    nombre: Proponer y aprobar movimiento presupuestario
+    subsistema: A
+    actores: [ADM, SUP]
+    detallado: false
+  - id: CU-12
+    nombre: Registrar contrato de subcontrato
+    subsistema: B
+    actores: [ADM]
+    detallado: false
+  - id: CU-13
+    nombre: Presentar medición de subcontrato
+    subsistema: B
+    actores: [SUB]
+    detallado: false
+  - id: CU-14
+    nombre: Certificar y valorizar subcontrato
+    subsistema: B
+    actores: [SUP, SUB, ERP]
+    detallado: false
+  - id: CU-15
+    nombre: Calcular costos por vía
+    subsistema: A
+    actores: [ING, ECMS]
+    detallado: false
+  - id: CU-16
+    nombre: Consultar reportes y Curva S
+    subsistema: B
+    actores: [ADM, SUP]
+    detallado: false
+
+subsistemas:
+  A: { nombre: "Presupuesto y Medición", descripcion: "Plan de la obra, su versionado y la medición física del avance." }
+  B: { nombre: "Certificación y Subcontratos", descripcion: "Valorización del avance medido, su emisión y la derivación al ERP." }
+
+relaciones_cu:
+  - { origen: CU-02, destino: CU-03, tipo: include }
+  - { origen: CU-09, destino: CU-07, tipo: include }
+  - { origen: CU-09, destino: CU-10, tipo: include }
+  - { origen: CU-14, destino: CU-10, tipo: include }
+  - { origen: CU-08, destino: CU-09, tipo: extend }
+  - { origen: CU-11, destino: CU-05, tipo: extend }
+
+# ------------------------------------------------------------------------------
+# ENTIDADES. Fuente del diagrama de clases del CU, de clases persistentes y del DER.
+# derivado:true  -> se marca "/" en UML y NO se genera columna en el DER (L2-16 del wiki).
+# tabla: ausente -> la clase no persiste (objeto de valor).
+# ------------------------------------------------------------------------------
+entidades:
+  - nombre: Organizacion
+    paquete: Organización y seguridad
+    tabla: organizacion
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: nombre, t: String, sql: "VARCHAR(160)" }
+      - { n: pais, t: String, sql: "CHAR(2)" }
+      - { n: moneda, t: String, sql: "CHAR(3)" }
+  - nombre: Usuario
+    paquete: Organización y seguridad
+    tabla: usuario
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: nombre, t: String, sql: "VARCHAR(160)" }
+      - { n: email, t: String, sql: "VARCHAR(254)" }
+  - nombre: RolAsignado
+    paquete: Organización y seguridad
+    tabla: rol_asignado
+    clase_asociativa: true
+    pk_compuesta: [usuario_id, obra_id]
+    atributos:
+      - { n: rol, t: String, sql: "VARCHAR(40)" }
+      - { n: vigenteDesde, t: Date, sql: "DATE" }
+  - nombre: Cliente
+    paquete: Partes
+    tabla: cliente
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: formaLegal, t: String, sql: "VARCHAR(10)" }
+      - { n: identificador, t: String, sql: "VARCHAR(30)" }
+      - { n: nombre, t: String, sql: "VARCHAR(160)" }
+  - nombre: Socio
+    paquete: Partes
+    tabla: socio
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: formaLegal, t: String, sql: "VARCHAR(10)" }
+      - { n: identificador, t: String, sql: "VARCHAR(30)" }
+      - { n: nombre, t: String, sql: "VARCHAR(160)" }
+  - nombre: Obra
+    paquete: Obra y configuración
+    tabla: obra
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: codigo, t: String, sql: "VARCHAR(30)" }
+      - { n: nombre, t: String, sql: "VARCHAR(160)" }
+      - { n: direccion, t: String, sql: "VARCHAR(240)", null: true }
+      - { n: estado, t: String, sql: "VARCHAR(20)" }
+      - { n: fechaInicio, t: Date, sql: "DATE", null: true }
+      - { n: fechaFin, t: Date, sql: "DATE", null: true }
+  - nombre: ConfiguracionObra
+    paquete: Obra y configuración
+    tabla: configuracion_obra
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: tasaIVA, t: Decimal, sql: "NUMERIC(5,2)" }
+      - { n: moneda, t: String, sql: "CHAR(3)" }
+      - { n: toleranciaDesvio, t: Decimal, sql: "NUMERIC(5,2)" }
+  - nombre: FondoRetencion
+    paquete: Obra y configuración
+    tabla: fondo_retencion
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: nombre, t: String, sql: "VARCHAR(80)" }
+      - { n: porcentaje, t: Decimal, sql: "NUMERIC(5,2)" }
+      - { n: base, t: String, sql: "VARCHAR(20)" }
+      - { n: aplicaA, t: String, sql: "VARCHAR(20)" }
+      - { n: activo, t: Boolean, sql: "BOOLEAN" }
+  - nombre: Presupuesto
+    paquete: Presupuesto
+    tabla: presupuesto
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: tipo, t: String, sql: "VARCHAR(10)" }
+      - { n: moneda, t: String, sql: "CHAR(3)" }
+  - nombre: VersionPresupuesto
+    paquete: Presupuesto
+    tabla: version_presupuesto
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: numero, t: Integer, sql: "INTEGER" }
+      - { n: estado, t: String, sql: "VARCHAR(20)" }
+      - { n: fechaActivacion, t: DateTime, sql: "TIMESTAMPTZ", null: true }
+      - { n: montoContractual, t: Decimal, derivado: true }
+  - nombre: LineaPresupuesto
+    paquete: Presupuesto
+    tabla: linea_presupuesto
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: codigo, t: String, sql: "VARCHAR(40)" }
+      - { n: descripcion, t: String, sql: "VARCHAR(400)" }
+      - { n: tipo, t: String, sql: "VARCHAR(12)" }
+      - { n: unidad, t: String, sql: "VARCHAR(12)", null: true }
+      - { n: cantidad, t: Decimal, sql: "NUMERIC(24,12)", null: true }
+      - { n: precioUnitario, t: Decimal, sql: "NUMERIC(24,12)", null: true }
+      - { n: orden, t: Integer, sql: "INTEGER" }
+      - { n: importe, t: Decimal, derivado: true }
+      - { n: cantidadMedida, t: Decimal, derivado: true }
+      - { n: saldo, t: Decimal, derivado: true }
+  - nombre: ArchivoOrigen
+    paquete: Presupuesto
+    tabla: archivo_origen
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: nombre, t: String, sql: "VARCHAR(255)" }
+      - { n: hashSHA256, t: String, sql: "CHAR(64)" }
+      - { n: ruta, t: String, sql: "VARCHAR(500)" }
+      - { n: fechaCarga, t: DateTime, sql: "TIMESTAMPTZ" }
+  - nombre: InformeImportacion
+    paquete: Presupuesto
+    tabla: informe_importacion
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: totalDeclarado, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: totalRecalculado, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: tolerancia, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: cuadra, t: Boolean, sql: "BOOLEAN" }
+      - { n: diferencia, t: Decimal, derivado: true }
+  - nombre: AnalisisCostoUnitario
+    paquete: Presupuesto
+    tabla: analisis_costo_unitario
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: codigo, t: String, sql: "VARCHAR(40)" }
+      - { n: descripcion, t: String, sql: "VARCHAR(400)" }
+      - { n: unidad, t: String, sql: "VARCHAR(12)" }
+      - { n: estado, t: String, sql: "VARCHAR(12)" }
+      - { n: costoUnitario, t: Decimal, derivado: true }
+  - nombre: ComponenteACU
+    paquete: Presupuesto
+    tabla: componente_acu
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: via, t: String, sql: "VARCHAR(12)" }
+      - { n: descripcion, t: String, sql: "VARCHAR(240)" }
+      - { n: unidad, t: String, sql: "VARCHAR(12)" }
+      - { n: cantidad, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: precioUnitario, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: factorCargas, t: Decimal, sql: "NUMERIC(5,2)", null: true }
+      - { n: subtotal, t: Decimal, derivado: true }
+  - nombre: Periodo
+    paquete: Medición
+    tabla: periodo
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: numero, t: Integer, sql: "INTEGER" }
+      - { n: fechaInicio, t: Date, sql: "DATE" }
+      - { n: fechaFin, t: Date, sql: "DATE" }
+      - { n: estado, t: String, sql: "VARCHAR(12)" }
+  - nombre: MedicionOficial
+    paquete: Medición
+    tabla: medicion_oficial
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: cantidad, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: unidad, t: String, sql: "VARCHAR(12)" }
+      - { n: ejecutor, t: String, sql: "VARCHAR(16)" }
+      - { n: estado, t: String, sql: "VARCHAR(12)" }
+      - { n: fechaRegistro, t: DateTime, sql: "TIMESTAMPTZ" }
+      - { n: fechaDecision, t: DateTime, sql: "TIMESTAMPTZ", null: true }
+      - { n: motivoRechazo, t: String, sql: "VARCHAR(400)", null: true }
+      - { n: cantidadCertificable, t: Decimal, derivado: true }
+  - nombre: Evidencia
+    paquete: Medición
+    tabla: evidencia
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: nombre, t: String, sql: "VARCHAR(255)" }
+      - { n: tipo, t: String, sql: "VARCHAR(20)" }
+      - { n: ruta, t: String, sql: "VARCHAR(500)" }
+      - { n: fechaCarga, t: DateTime, sql: "TIMESTAMPTZ" }
+  - nombre: PropuestaPendiente
+    paquete: Medición
+    tabla: propuesta_pendiente
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: cantidad, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: estado, t: String, sql: "VARCHAR(12)" }
+      - { n: fechaRegistro, t: DateTime, sql: "TIMESTAMPTZ" }
+  - nombre: MovimientoPresupuestario
+    paquete: Presupuesto
+    tabla: movimiento_presupuestario
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: tipo, t: String, sql: "VARCHAR(20)" }
+      - { n: motivo, t: String, sql: "VARCHAR(400)" }
+      - { n: montoEfecto, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: limite, t: Decimal, sql: "NUMERIC(24,12)", null: true }
+      - { n: estado, t: String, sql: "VARCHAR(24)" }
+      - { n: fechaPropuesta, t: DateTime, sql: "TIMESTAMPTZ" }
+      - { n: importeUtilizado, t: Decimal, derivado: true }
+      - { n: saldoDisponible, t: Decimal, derivado: true }
+  - nombre: Certificado
+    paquete: Certificación
+    tabla: certificado
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: numero, t: String, sql: "VARCHAR(30)", null: true }
+      - { n: tipo, t: String, sql: "VARCHAR(16)" }
+      - { n: fechaEmision, t: Date, sql: "DATE", null: true }
+      - { n: destinatario, t: String, sql: "VARCHAR(160)", null: true }
+      - { n: estado, t: String, sql: "VARCHAR(12)" }
+  - nombre: RevisionCertificado
+    paquete: Certificación
+    tabla: revision_certificado
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: numero, t: Integer, sql: "INTEGER" }
+      - { n: fechaGeneracion, t: DateTime, sql: "TIMESTAMPTZ" }
+      - { n: subtotal, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: impuestos, t: Decimal, derivado: true }
+      - { n: retenciones, t: Decimal, derivado: true }
+      - { n: total, t: Decimal, derivado: true }
+  - nombre: LineaCertificado
+    paquete: Certificación
+    tabla: linea_certificado
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: cantidadPeriodo, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: precioUnitario, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: importe, t: Decimal, derivado: true }
+      - { n: cantidadAcumulada, t: Decimal, derivado: true }
+  - nombre: Aprobacion
+    paquete: Certificación
+    tabla: aprobacion
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: tipo, t: String, sql: "VARCHAR(24)" }
+      - { n: fecha, t: DateTime, sql: "TIMESTAMPTZ" }
+      - { n: observacion, t: String, sql: "VARCHAR(400)", null: true }
+  - nombre: RetencionAplicada
+    paquete: Certificación
+    tabla: retencion_aplicada
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: porcentaje, t: Decimal, sql: "NUMERIC(5,2)" }
+      - { n: base, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: importe, t: Decimal, derivado: true }
+  - nombre: Subcontrato
+    paquete: Subcontratos e integración ERP
+    tabla: subcontrato
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: numero, t: String, sql: "VARCHAR(30)" }
+      - { n: montoContrato, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: modalidad, t: String, sql: "VARCHAR(16)" }
+      - { n: estado, t: String, sql: "VARCHAR(12)" }
+      - { n: montoCertificado, t: Decimal, derivado: true }
+      - { n: saldoCertificable, t: Decimal, derivado: true }
+  - nombre: DocumentoFinancieroERP
+    paquete: Subcontratos e integración ERP
+    tabla: documento_financiero_erp
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: tipo, t: String, sql: "VARCHAR(12)" }
+      - { n: numero, t: String, sql: "VARCHAR(30)" }
+      - { n: fecha, t: Date, sql: "DATE" }
+      - { n: monto, t: Decimal, sql: "NUMERIC(24,12)" }
+      - { n: estado, t: String, sql: "VARCHAR(12)" }
+  - nombre: RegistroAuditoria
+    paquete: Organización y seguridad
+    tabla: registro_auditoria
+    atributos:
+      - { n: id, t: UUID, sql: "UUID", pk: true }
+      - { n: entidad, t: String, sql: "VARCHAR(60)" }
+      - { n: entidadId, t: UUID, sql: "UUID" }
+      - { n: accion, t: String, sql: "VARCHAR(40)" }
+      - { n: fecha, t: DateTime, sql: "TIMESTAMPTZ" }
+      - { n: detalle, t: String, sql: "VARCHAR(600)", null: true }
+  - nombre: Valorizacion
+    paquete: Certificación
+    objeto_valor: true
+    atributos:
+      - { n: subtotal, t: Decimal }
+      - { n: impuestos, t: Decimal }
+      - { n: retenciones, t: Decimal }
+      - { n: total, t: Decimal }
+
+# ------------------------------------------------------------------------------
+# RELACIONES. fk_en/fk_col alimentan el DER; tipo y cardinalidad alimentan UML.
+# tipo: composicion | agregacion | asociacion
+# ------------------------------------------------------------------------------
+relaciones:
+  - { a: Organizacion, b: Obra, tipo: agregacion, ca: "1", cb: "0..*", fk_en: obra, fk_col: organizacion_id }
+  - { a: Organizacion, b: Usuario, tipo: agregacion, ca: "1", cb: "1..*", fk_en: usuario, fk_col: organizacion_id }
+  - { a: Usuario, b: RolAsignado, tipo: composicion, ca: "1", cb: "0..*", fk_en: rol_asignado, fk_col: usuario_id }
+  - { a: Obra, b: RolAsignado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: rol_asignado, fk_col: obra_id }
+  - { a: Cliente, b: Obra, tipo: asociacion, ca: "1", cb: "0..*", fk_en: obra, fk_col: cliente_id, rol: "comitente" }
+  - { a: Obra, b: ConfiguracionObra, tipo: composicion, ca: "1", cb: "1", fk_en: configuracion_obra, fk_col: obra_id }
+  - { a: ConfiguracionObra, b: FondoRetencion, tipo: composicion, ca: "1", cb: "0..*", fk_en: fondo_retencion, fk_col: configuracion_obra_id }
+  - { a: Obra, b: Presupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: presupuesto, fk_col: obra_id }
+  - { a: Presupuesto, b: VersionPresupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: version_presupuesto, fk_col: presupuesto_id }
+  - { a: VersionPresupuesto, b: LineaPresupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: linea_presupuesto, fk_col: version_presupuesto_id }
+  - { a: LineaPresupuesto, b: LineaPresupuesto, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: linea_presupuesto, fk_col: padre_id, rol: "jerarquía rubro/subrubro/ítem" }
+  - { a: VersionPresupuesto, b: ArchivoOrigen, tipo: composicion, ca: "1", cb: "0..1", fk_en: archivo_origen, fk_col: version_presupuesto_id }
+  - { a: VersionPresupuesto, b: InformeImportacion, tipo: composicion, ca: "1", cb: "0..1", fk_en: informe_importacion, fk_col: version_presupuesto_id }
+  - { a: AnalisisCostoUnitario, b: LineaPresupuesto, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: linea_presupuesto, fk_col: acu_id }
+  - { a: AnalisisCostoUnitario, b: ComponenteACU, tipo: composicion, ca: "1", cb: "1..*", fk_en: componente_acu, fk_col: acu_id }
+  - { a: Obra, b: AnalisisCostoUnitario, tipo: agregacion, ca: "1", cb: "0..*", fk_en: analisis_costo_unitario, fk_col: obra_id }
+  - { a: Obra, b: Periodo, tipo: composicion, ca: "1", cb: "0..*", fk_en: periodo, fk_col: obra_id }
+  - { a: Periodo, b: MedicionOficial, tipo: composicion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: periodo_id }
+  - { a: LineaPresupuesto, b: MedicionOficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: linea_presupuesto_id }
+  - { a: VersionPresupuesto, b: MedicionOficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: version_presupuesto_id, rol: "medida contra" }
+  - { a: Usuario, b: MedicionOficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: registrado_por, rol: "registra", detalle: true }
+  - { a: Usuario, b: MedicionOficial, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: medicion_oficial, fk_col: decidido_por, rol: "aprueba o rechaza", detalle: true }
+  - { a: MedicionOficial, b: Evidencia, tipo: composicion, ca: "1", cb: "0..*", fk_en: evidencia, fk_col: medicion_oficial_id }
+  - { a: MedicionOficial, b: PropuestaPendiente, tipo: composicion, ca: "1", cb: "0..1", fk_en: propuesta_pendiente, fk_col: medicion_oficial_id }
+  - { a: MovimientoPresupuestario, b: PropuestaPendiente, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: propuesta_pendiente, fk_col: movimiento_id, rol: "cubre" }
+  - { a: LineaPresupuesto, b: MovimientoPresupuestario, tipo: asociacion, ca: "1", cb: "0..*", fk_en: movimiento_presupuestario, fk_col: linea_presupuesto_id, rol: "objetivo" }
+  - { a: VersionPresupuesto, b: MovimientoPresupuestario, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: movimiento_presupuestario, fk_col: version_generada_id, rol: "genera" }
+  - { a: Periodo, b: Certificado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: certificado, fk_col: periodo_id }
+  - { a: Subcontrato, b: Certificado, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: certificado, fk_col: subcontrato_id }
+  - { a: Certificado, b: RevisionCertificado, tipo: composicion, ca: "1", cb: "1..*", fk_en: revision_certificado, fk_col: certificado_id }
+  - { a: RevisionCertificado, b: LineaCertificado, tipo: composicion, ca: "1", cb: "1..*", fk_en: linea_certificado, fk_col: revision_certificado_id }
+  - { a: MedicionOficial, b: LineaCertificado, tipo: asociacion, ca: "1", cb: "0..1", fk_en: linea_certificado, fk_col: medicion_oficial_id }
+  - { a: LineaPresupuesto, b: LineaCertificado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: linea_certificado, fk_col: linea_presupuesto_id }
+  - { a: RevisionCertificado, b: Aprobacion, tipo: composicion, ca: "0..1", cb: "0..*", fk_en: aprobacion, fk_col: revision_certificado_id }
+  - { a: MovimientoPresupuestario, b: Aprobacion, tipo: composicion, ca: "0..1", cb: "0..*", fk_en: aprobacion, fk_col: movimiento_id }
+  - { a: Usuario, b: Aprobacion, tipo: asociacion, ca: "1", cb: "0..*", fk_en: aprobacion, fk_col: actor_id, detalle: true }
+  - { a: RevisionCertificado, b: RetencionAplicada, tipo: composicion, ca: "1", cb: "0..*", fk_en: retencion_aplicada, fk_col: revision_certificado_id }
+  - { a: FondoRetencion, b: RetencionAplicada, tipo: asociacion, ca: "1", cb: "0..*", fk_en: retencion_aplicada, fk_col: fondo_retencion_id }
+  - { a: Certificado, b: DocumentoFinancieroERP, tipo: asociacion, ca: "1", cb: "0..1", fk_en: documento_financiero_erp, fk_col: certificado_id }
+  - { a: Obra, b: Subcontrato, tipo: agregacion, ca: "1", cb: "0..*", fk_en: subcontrato, fk_col: obra_id }
+  - { a: Socio, b: Subcontrato, tipo: asociacion, ca: "1", cb: "0..*", fk_en: subcontrato, fk_col: socio_id }
+  - { a: Usuario, b: RegistroAuditoria, tipo: asociacion, ca: "1", cb: "0..*", fk_en: registro_auditoria, fk_col: actor_id, detalle: true }
+
+# ------------------------------------------------------------------------------
+# PUERTOS (interfaces declaradas por el dominio; la infraestructura las implementa).
+# ------------------------------------------------------------------------------
+puertos:
+  - { nombre: IPresupuestoRepositorio, metodos: ["buscarVersionVigente(obraId)", "buscarPorHash(hash)", "guardarVersion(version)"], adaptador: PresupuestoRepositorioSQL }
+  - { nombre: IAlmacenArchivos,        metodos: ["guardar(archivo)", "recuperar(ruta)"], adaptador: AlmacenArchivosS3 }
+  - { nombre: ILectorPlanilla,         metodos: ["leer(archivo)", "detectarEstructura(hojas)"], adaptador: LectorPlanillaXLSX }
+  - { nombre: IMedicionRepositorio,    metodos: ["listarPorPeriodo(periodoId)", "guardar(medicion)", "acumuladoAprobado(lineaId)"], adaptador: MedicionRepositorioSQL }
+  - { nombre: ICertificadoRepositorio, metodos: ["buscarRevision(revisionId)", "guardar(certificado)", "siguienteNumero(obraId)"], adaptador: CertificadoRepositorioSQL }
+  - { nombre: IGeneradorDocumento,     metodos: ["exportar(revision, formato)"], adaptador: GeneradorDocumentoXLSXPDF }
+  - { nombre: IPublicadorEventos,      metodos: ["publicar(evento)"], adaptador: PuenteERP }
+  - { nombre: IAuditoriaRepositorio,   metodos: ["registrar(entrada)"], adaptador: AuditoriaRepositorioSQL }
+  - { nombre: IReloj,                  metodos: ["ahora()"], adaptador: RelojSistema }
+
+# ------------------------------------------------------------------------------
+# CLASES POR CASO DE USO (Clean Architecture proyectada en estereotipos Jacobson).
+# ------------------------------------------------------------------------------
+clases_cu:
+  CU-02:
+    boundary: [ImportarPresupuestoControlador, ImportacionPresentador]
+    control:  [ImportarPresupuestoInteractor, ValidarEstructuraServicio, ContrastarTotalesServicio]
+    entity:   [Obra, Presupuesto, VersionPresupuesto, LineaPresupuesto, ArchivoOrigen, InformeImportacion]
+    puertos:  [IPresupuestoRepositorio, IAlmacenArchivos, ILectorPlanilla, IAuditoriaRepositorio]
+  CU-05:
+    boundary: [AprobarMedicionControlador, MedicionPresentador]
+    control:  [AprobarMedicionInteractor, EvaluarSaldoServicio]
+    entity:   [Periodo, MedicionOficial, Evidencia, LineaPresupuesto, VersionPresupuesto, PropuestaPendiente]
+    puertos:  [IMedicionRepositorio, IPresupuestoRepositorio, IAuditoriaRepositorio, IReloj]
+  CU-09:
+    boundary: [EmitirCertificadoControlador, CertificadoPresentador]
+    control:  [EmitirCertificadoInteractor, VerificarSeparacionFuncionesServicio, CalcularValorizacionServicio]
+    entity:   [Certificado, RevisionCertificado, LineaCertificado, Aprobacion, RetencionAplicada, ConfiguracionObra, FondoRetencion, Valorizacion]
+    puertos:  [ICertificadoRepositorio, IGeneradorDocumento, IPublicadorEventos, IAuditoriaRepositorio, IReloj]
+
+# ------------------------------------------------------------------------------
+# MÁQUINAS DE ESTADO. Única declaración: prosa y diagramas leen de aquí.
+# ------------------------------------------------------------------------------
+estados:
+  VersionPresupuesto:
+    inicial: Propuesta
+    finales: [Reemplazada, Descartada]
+    estados:
+      - { n: Propuesta,   d: "Importada y confirmada en su estructura; todavía no rige." }
+      - { n: Vigente,     d: "Rige para medición, certificación y control de saldo." }
+      - { n: Reemplazada, d: "Un movimiento aprobado generó una versión posterior; permanece consultable." }
+      - { n: Descartada,  d: "La importación no se confirmó; no llegó a regir." }
+    transiciones:
+      - { de: Propuesta, a: Vigente, evento: "activar", guarda: "estructura confirmada" }
+      - { de: Propuesta, a: Descartada, evento: "descartar" }
+      - { de: Vigente, a: Reemplazada, evento: "activar versión posterior" }
+  MedicionOficial:
+    inicial: Registrada
+    finales: [Aprobada]
+    estados:
+      - { n: Registrada, d: "Cargada por el Ingeniero de Obra con su evidencia; espera decisión." }
+      - { n: Aprobada,   d: "El Responsable Técnico la validó; su cantidad cubierta es certificable." }
+      - { n: Rechazada,  d: "Devuelta con motivo; no integra el acumulado físico." }
+    transiciones:
+      - { de: Registrada, a: Aprobada, evento: "aprobar", guarda: "actor distinto del que registró" }
+      - { de: Registrada, a: Rechazada, evento: "rechazar", guarda: "motivo informado" }
+      - { de: Rechazada, a: Registrada, evento: "corregir y reenviar" }
+  Certificado:
+    inicial: Borrador
+    finales: [Cerrado]
+    estados:
+      - { n: Borrador, d: "Generado desde mediciones aprobadas elegibles; editable." }
+      - { n: Emitido,  d: "Presentado para conformidad técnica y autorización." }
+      - { n: Aprobado, d: "Conformado y autorizado por actores distintos; origina el documento financiero ERP." }
+      - { n: Cerrado,  d: "Período liquidado; el certificado y sus fuentes permanecen consultables." }
+    transiciones:
+      - { de: Borrador, a: Emitido, evento: "emitir revisión" }
+      - { de: Emitido, a: Borrador, evento: "devolver para corrección", guarda: "observación registrada" }
+      - { de: Emitido, a: Aprobado, evento: "autorizar", guarda: "conformidad técnica de un actor distinto" }
+      - { de: Aprobado, a: Cerrado, evento: "cerrar período" }
+      - { de: Cerrado, a: Borrador, evento: "reapertura autorizada", guarda: "auditada; crea revisión vinculada" }
+  MovimientoPresupuestario:
+    inicial: Propuesto
+    finales: [Vigente, Rechazado]
+    estados:
+      - { n: Propuesto,            d: "Registrado con tipo, objetivo, motivo y respaldo documental." }
+      - { n: AprobadoInterno,      d: "La organización lo aprobó; todavía no modifica el presupuesto." }
+      - { n: AprobadoContractual,  d: "El comitente lo aceptó; habilita la nueva versión." }
+      - { n: Vigente,              d: "Generó una versión de presupuesto nueva que ya rige." }
+      - { n: Rechazado,            d: "No prosperó; el presupuesto vigente no cambia." }
+    transiciones:
+      - { de: Propuesto, a: AprobadoInterno, evento: "aprobar internamente", guarda: "datos completos y dentro del límite" }
+      - { de: Propuesto, a: Rechazado, evento: "rechazar" }
+      - { de: AprobadoInterno, a: AprobadoContractual, evento: "aprobar contractualmente" }
+      - { de: AprobadoInterno, a: Rechazado, evento: "rechazar" }
+      - { de: AprobadoContractual, a: Vigente, evento: "activar versión" }
+
+# ------------------------------------------------------------------------------
+# SECUENCIAS (diagrama de interacción). Derivan del mismo flujo de la especificación.
+# frag: alt|else|loop|opt|end  -> fragmento combinado UML.
+# tipo: sync (llamada) | return (respuesta) | create
+# ------------------------------------------------------------------------------
+secuencias:
+  CU-02:
+    participantes:
+      - { id: ING,  tipo: actor,     nombre: "Ingeniero de Obra" }
+      - { id: CTRL, tipo: boundary,  nombre: ImportarPresupuestoControlador }
+      - { id: UC,   tipo: control,   nombre: ImportarPresupuestoInteractor }
+      - { id: VAL,  tipo: control,   nombre: ValidarEstructuraServicio }
+      - { id: TOT,  tipo: control,   nombre: ContrastarTotalesServicio }
+      - { id: LEC,  tipo: interface, nombre: ILectorPlanilla }
+      - { id: ALM,  tipo: interface, nombre: IAlmacenArchivos }
+      - { id: REP,  tipo: interface, nombre: IPresupuestoRepositorio }
+      - { id: VER,  tipo: entity,    nombre: VersionPresupuesto }
+      - { id: LIN,  tipo: entity,    nombre: LineaPresupuesto }
+    mensajes:
+      - { de: ING,  a: CTRL, msg: "importarPresupuesto(obraId, archivo)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(solicitudImportacion)" }
+      - { de: UC,   a: ALM,  msg: "guardar(archivo)" }
+      - { de: ALM,  a: UC,   msg: "ArchivoOrigen(hashSHA256)", tipo: return }
+      - { de: UC,   a: REP,  msg: "buscarPorHash(hashSHA256)" }
+      - { de: REP,  a: UC,   msg: "versionExistente | nulo", tipo: return }
+      - { frag: alt, etiqueta: "el archivo ya fue importado (RNF-07)" }
+      - { de: UC,   a: CTRL, msg: "refiereVersionExistente(versionId)", tipo: return }
+      - { frag: else, etiqueta: "archivo nuevo" }
+      - { de: UC,   a: LEC,  msg: "leer(archivo)" }
+      - { de: LEC,  a: UC,   msg: "hojas y filas reconocidas", tipo: return }
+      - { frag: loop, etiqueta: "por cada fila de rubro, subrubro o ítem" }
+      - { de: UC,   a: LIN,  msg: "crear(codigo, unidad, cantidad, precioUnitario)", tipo: create }
+      - { frag: end }
+      - { de: UC,   a: VAL,  msg: "validar(lineas)" }
+      - { de: VAL,  a: UC,   msg: "incidencias(hoja, fila, columna)", tipo: return }
+      - { de: UC,   a: TOT,  msg: "contrastar(totalDeclarado, totalRecalculado)" }
+      - { de: TOT,  a: UC,   msg: "InformeImportacion(diferencia, cuadra)", tipo: return }
+      - { de: UC,   a: CTRL, msg: "previsualizacion(estructura, totales, incidencias)", tipo: return }
+      - { de: CTRL, a: ING,  msg: "muestra estructura, ambos totales y datos inválidos", tipo: return }
+      - { de: ING,  a: CTRL, msg: "confirmarEstructura(rubros, unidades, agrupaciones)" }
+      - { de: CTRL, a: UC,   msg: "confirmar(solicitudId)" }
+      - { de: UC,   a: VER,  msg: "crear(numero, estado = Propuesta)", tipo: create }
+      - { de: UC,   a: REP,  msg: "guardarVersion(version)" }
+      - { de: UC,   a: CTRL, msg: "versionRegistrada(versionId)", tipo: return }
+      - { frag: end }
+      - { de: CTRL, a: ING,  msg: "informa el resultado de la importación", tipo: return }
+  CU-05:
+    participantes:
+      - { id: SUP,  tipo: actor,     nombre: "Responsable Técnico" }
+      - { id: CTRL, tipo: boundary,  nombre: AprobarMedicionControlador }
+      - { id: UC,   tipo: control,   nombre: AprobarMedicionInteractor }
+      - { id: SAL,  tipo: control,   nombre: EvaluarSaldoServicio }
+      - { id: MREP, tipo: interface, nombre: IMedicionRepositorio }
+      - { id: PREP, tipo: interface, nombre: IPresupuestoRepositorio }
+      - { id: AUD,  tipo: interface, nombre: IAuditoriaRepositorio }
+      - { id: MED,  tipo: entity,    nombre: MedicionOficial }
+      - { id: LIN,  tipo: entity,    nombre: LineaPresupuesto }
+      - { id: PRO,  tipo: entity,    nombre: PropuestaPendiente }
+    mensajes:
+      - { de: SUP,  a: CTRL, msg: "listarMediciones(obraId, periodoId)" }
+      - { de: CTRL, a: UC,   msg: "obtenerPendientes(periodoId)" }
+      - { de: UC,   a: MREP, msg: "listarPorPeriodo(periodoId)" }
+      - { de: MREP, a: UC,   msg: "mediciones registradas", tipo: return }
+      - { de: UC,   a: CTRL, msg: "mediciones con cantidad, unidad, ejecutor y evidencia", tipo: return }
+      - { de: CTRL, a: SUP,  msg: "muestra la lista del período", tipo: return }
+      - { de: SUP,  a: CTRL, msg: "aprobarMedicion(medicionId)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(medicionId, actorId)" }
+      - { de: UC,   a: MREP, msg: "acumuladoAprobado(lineaId)" }
+      - { de: MREP, a: UC,   msg: "cantidadAcumulada", tipo: return }
+      - { de: UC,   a: PREP, msg: "buscarVersionVigente(obraId)" }
+      - { de: PREP, a: UC,   msg: "VersionPresupuesto vigente", tipo: return }
+      - { de: UC,   a: LIN,  msg: "saldo(cantidadAcumulada)" }
+      - { de: LIN,  a: UC,   msg: "saldo disponible", tipo: return }
+      - { de: UC,   a: SAL,  msg: "evaluar(cantidadMedida, saldo)" }
+      - { de: SAL,  a: UC,   msg: "cantidadCertificable, exceso", tipo: return }
+      - { frag: alt, etiqueta: "la cantidad excede el saldo vigente (RF-09)" }
+      - { de: UC,   a: PRO,  msg: "crear(exceso, estado = Pendiente)", tipo: create }
+      - { de: UC,   a: MED,  msg: "aprobar(cantidadCertificable, actorId, fecha)" }
+      - { frag: else, etiqueta: "la cantidad está cubierta por el saldo" }
+      - { de: UC,   a: MED,  msg: "aprobar(cantidadMedida, actorId, fecha)" }
+      - { frag: end }
+      - { de: UC,   a: MREP, msg: "guardar(medicion)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, version, decisión)" }
+      - { de: UC,   a: CTRL, msg: "resultado(estado, cantidadCertificable, exceso)", tipo: return }
+      - { de: CTRL, a: SUP,  msg: "confirma la decisión y el acumulado actualizado", tipo: return }
+  CU-09:
+    participantes:
+      - { id: SUP,  tipo: actor,     nombre: "Responsable Técnico" }
+      - { id: ADM,  tipo: actor,     nombre: "Administrador" }
+      - { id: CTRL, tipo: boundary,  nombre: EmitirCertificadoControlador }
+      - { id: UC,   tipo: control,   nombre: EmitirCertificadoInteractor }
+      - { id: SEP,  tipo: control,   nombre: VerificarSeparacionFuncionesServicio }
+      - { id: VLZ,  tipo: control,   nombre: CalcularValorizacionServicio }
+      - { id: CREP, tipo: interface, nombre: ICertificadoRepositorio }
+      - { id: DOC,  tipo: interface, nombre: IGeneradorDocumento }
+      - { id: EVT,  tipo: interface, nombre: IPublicadorEventos }
+      - { id: REV,  tipo: entity,    nombre: RevisionCertificado }
+      - { id: APR,  tipo: entity,    nombre: Aprobacion }
+      - { id: CER,  tipo: entity,    nombre: Certificado }
+    mensajes:
+      - { de: SUP,  a: CTRL, msg: "abrirRevision(revisionId)" }
+      - { de: CTRL, a: UC,   msg: "obtenerRevision(revisionId)" }
+      - { de: UC,   a: CREP, msg: "buscarRevision(revisionId)" }
+      - { de: CREP, a: UC,   msg: "RevisionCertificado", tipo: return }
+      - { de: UC,   a: VLZ,  msg: "calcular(lineas, configuracionObra)" }
+      - { de: VLZ,  a: UC,   msg: "Valorizacion(subtotal, impuestos, retenciones, total)", tipo: return }
+      - { de: UC,   a: CTRL, msg: "revisión con valorización y alertas", tipo: return }
+      - { de: CTRL, a: SUP,  msg: "muestra cantidades, valorización y alertas", tipo: return }
+      - { de: SUP,  a: CTRL, msg: "otorgarConformidadTecnica(revisionId)" }
+      - { de: CTRL, a: UC,   msg: "registrarAprobacion(revisionId, actorId, CONFORMIDAD_TECNICA)" }
+      - { de: UC,   a: APR,  msg: "crear(tipo, actorId, fecha)", tipo: create }
+      - { de: UC,   a: CREP, msg: "guardar(revision)" }
+      - { de: ADM,  a: CTRL, msg: "autorizarEmision(revisionId)" }
+      - { de: CTRL, a: UC,   msg: "emitir(revisionId, actorId)" }
+      - { de: UC,   a: REV,  msg: "aprobaciones()" }
+      - { de: REV,  a: UC,   msg: "conformidad y autorización registradas", tipo: return }
+      - { de: UC,   a: SEP,  msg: "verificar(aprobaciones, actorId)" }
+      - { frag: alt, etiqueta: "falta una aprobación o ambas son del mismo actor (RF-17)" }
+      - { de: SEP,  a: UC,   msg: "EmisionBloqueada(motivo)", tipo: return }
+      - { de: UC,   a: CTRL, msg: "rechaza la emisión e indica la aprobación faltante", tipo: return }
+      - { frag: else, etiqueta: "conformidad y autorización de actores distintos" }
+      - { de: SEP,  a: UC,   msg: "separación verificada", tipo: return }
+      - { de: UC,   a: CREP, msg: "siguienteNumero(obraId)" }
+      - { de: CREP, a: UC,   msg: "numero", tipo: return }
+      - { de: UC,   a: CER,  msg: "aprobar(numero, fecha, destinatario)" }
+      - { de: UC,   a: CREP, msg: "guardar(certificado)" }
+      - { de: UC,   a: DOC,  msg: "exportar(revision, formato)" }
+      - { de: DOC,  a: UC,   msg: "archivo nuevo XLSX o PDF", tipo: return }
+      - { de: UC,   a: EVT,  msg: "publicar(CertificadoAprobado(certificadoId))", tipo: async }
+      - { frag: end }
+      - { de: UC,   a: CTRL, msg: "resultado de la emisión", tipo: return }
+      - { de: CTRL, a: ADM,  msg: "confirma número, fecha y archivo generado", tipo: return }
+
+# ------------------------------------------------------------------------------
+# REFERENCIAS (APA). Alimentan la última sección del documento.
+# ------------------------------------------------------------------------------
+referencias:
+  - "Bruegge, B. y Dutoit, A. H. (2002). *Ingeniería de software orientado a objetos*. Pearson Educación."
+  - "Jacobson, I., Christerson, M., Jonsson, P. y Övergaard, G. (1992). *Object-oriented software engineering: A use case driven approach*. Addison-Wesley."
+  - "Martin, R. C. (2017). *Clean architecture: A craftsman's guide to software structure and design*. Prentice Hall."
+  - "Pressman, R. S. (2010). *Ingeniería del software: un enfoque práctico* (7.ª ed.). McGraw-Hill Interamericana."
+  - "Rumbaugh, J., Jacobson, I. y Booch, G. (2007). *El lenguaje unificado de modelado: manual de referencia* (2.ª ed.). Pearson Educación."
+  - "Sommerville, I. (2011). *Ingeniería de software* (9.ª ed.). Pearson Educación."
+  - "Brown, S. (2024). *The C4 model for visualising software architecture*. https://c4model.com"
+  - "Cuatro Projects S.R.L. (2026). *Captura de requerimientos — Rojas, Taveira y Scotover* [Documento interno]."
+  - "Obra Studio. (2026). *Wiki de dominio, arquitectura e integración* [Documentación interna]."
+
+# ------------------------------------------------------------------------------
+# DECISIONES DE MODELADO. Discrepancias halladas entre el catálogo de
+# requerimientos y la documentación de dominio, con su resolución.
+# ------------------------------------------------------------------------------
+decisiones:
+  - id: D-01
+    tema: Términos ausentes en la documentación de dominio
+    hallazgo: >-
+      «Valorización» y «Curva S» no aparecen en ninguna versión de la documentación de Obra Studio.
+    resolucion: >-
+      Se conservan como requisitos (RF-13, RF-25 y RF-27) y se declaran en la tabla de vocabulario
+      como alcance que extiende el dominio documentado. Valorización designa el importe calculado
+      del certificado; Curva S es un reporte derivado que no agrega tabla propia.
+  - id: D-02
+    tema: Aditivos y deductivos
+    hallazgo: >-
+      El catálogo habla de aditivos y deductivos; la documentación de dominio no usa esos términos.
+    resolucion: >-
+      Se unifican en MovimientoPresupuestario con tipo AMPLIACION, DEDUCCION o VARIACION_PRECIO,
+      que es el vocabulario del dominio.
+  - id: D-03
+    tema: Rol de responsable técnico
+    hallazgo: >-
+      El catálogo nombra un «responsable técnico» que no existe como rol en el dominio.
+    resolucion: >-
+      Se asimila al Supervisor y se reparte la responsabilidad en tres actores: el Ingeniero de Obra
+      registra, el Responsable Técnico aprueba y el Administrador autoriza la emisión.
+  - id: D-04
+    tema: Idempotencia de la importación
+    hallazgo: >-
+      RNF-07 exige que recargar el mismo XLSX no cree otra versión, pero la implementación actual
+      calcula el hash sobre el documento ya confirmado y no sobre el archivo.
+    resolucion: >-
+      ArchivoOrigen declara hashSHA256 sobre el contenido del archivo y la importación lo consulta
+      antes de crear una versión, de modo que el requisito se cumple tal como está enunciado.
+  - id: D-05
+    tema: Doble conteo de trabajo físico
+    hallazgo: >-
+      RF-10 exige impedir que una misma cantidad se contabilice dos veces, sin indicar el mecanismo.
+    resolucion: >-
+      Existe una sola MedicionOficial por ítem y período, con el ejecutor como atributo en lugar de
+      un registro separado para el subcontratista. El acumulado se incrementa una sola vez por
+      construcción del modelo, no por una validación añadida.
+  - id: D-06
+    tema: Estados del movimiento presupuestario
+    hallazgo: >-
+      RF-21 exige aprobación interna y contractual separadas; el dominio no define estados para el
+      movimiento.
+    resolucion: >-
+      Se diseña el ciclo Propuesto, AprobadoInterno, AprobadoContractual y Vigente, más Rechazado.
+      Solo la transición a Vigente genera una versión de presupuesto nueva.
+  - id: D-07
+    tema: Estados del certificado
+    hallazgo: >-
+      La documentación describe el certificado con tres, cuatro y cinco estados según el documento,
+      y trata el rechazo unas veces como estado y otras como transición.
+    resolucion: >-
+      Se unifica en Borrador, Emitido, Aprobado y Cerrado. El rechazo es la transición de Emitido a
+      Borrador. La reapertura de un certificado cerrado es autorizada y auditada, crea una revisión
+      vinculada y preserva el original.
+  - id: D-08
+    tema: Modelo de permisos
+    hallazgo: >-
+      Una parte de la documentación define una matriz de roles y otra afirma que la aplicación no
+      debe definir ningún rol.
+    resolucion: >-
+      Se adopta la matriz de roles, porque RNF-01 exige comprobar el rol y RF-17 exige separación de
+      funciones entre quien conforma y quien autoriza.
+  - id: D-09
+    tema: Propiedad del contrato de subcontrato
+    hallazgo: >-
+      Un documento asigna el contrato al ERP y otro al ECMS.
+    resolucion: >-
+      Se aplica la regla de propiedad por naturaleza del registro: el hecho de campo pertenece al
+      ECMS y el documento legal al ERP. El contrato es del ERP; el certificado, del ECMS.
+  - id: D-10
+    tema: Persistencia del árbol de presupuesto
+    hallazgo: >-
+      La implementación guarda el presupuesto como documento JSON y no como tablas normalizadas.
+    resolucion: >-
+      El diagrama de entidad relación presenta el modelo normalizado, que es lo que corresponde al
+      modelo de diseño. El almacenamiento documental se documenta como decisión de implementación y
+      no altera el modelo conceptual.
+  - id: D-11
+    tema: Atributos derivados
+    hallazgo: >-
+      Importes como el acumulado certificado o el saldo podrían almacenarse y quedar desfasados.
+    resolucion: >-
+      Se marcan como derivados en el diagrama de clases y se omiten como columnas en el diagrama de
+      entidad relación: se calculan desde los registros aprobados y no pueden discrepar de su origen.
+  - id: D-12
+    tema: Alcance del trabajo
+    hallazgo: >-
+      Obra Studio no tiene ningún módulo de taller ni de fabricación, ni en la documentación ni en
+      el catálogo de módulos de la implementación.
+    resolucion: >-
+      No hay nada que excluir por ese concepto. El alcance se acota explícitamente a seis módulos y
+      se declaran los excluidos con su motivo.
+
+# ------------------------------------------------------------------------------
+# TRAZABILIDAD MODELO -> IMPLEMENTACIÓN (para el archivo de apoyo).
+# estado: implementado | especificado
+# ------------------------------------------------------------------------------
+trazabilidad:
+  - { clase: Obra,                  estado: implementado, nota: "Fila de la tabla projects." }
+  - { clase: Presupuesto,           estado: implementado, nota: "Tabla budgets, con tipo cliente, costo o adendas." }
+  - { clase: VersionPresupuesto,    estado: implementado, nota: "Columna revision más el diario inmutable budget_operations." }
+  - { clase: LineaPresupuesto,      estado: implementado, nota: "CostItem dentro del documento del presupuesto." }
+  - { clase: AnalisisCostoUnitario, estado: implementado, nota: "Partida marcada como ACU y su cálculo." }
+  - { clase: ArchivoOrigen,         estado: implementado, nota: "Importación con hash del contenido." }
+  - { clase: InformeImportacion,    estado: implementado, nota: "Informe de importación con totales declarado y recalculado." }
+  - { clase: MedicionOficial,       estado: especificado, nota: "Documentada en el dominio; sin implementación." }
+  - { clase: Periodo,               estado: especificado, nota: "Documentada en el dominio; sin implementación." }
+  - { clase: Certificado,           estado: especificado, nota: "Módulo de certificaciones presente en el catálogo, sin implementación." }
+  - { clase: Subcontrato,           estado: especificado, nota: "Módulo de subcontratos presente en el catálogo, sin implementación." }
+  - { clase: DocumentoFinancieroERP, estado: especificado, nota: "Factura y pago del ERP; fuera del alcance implementado." }
