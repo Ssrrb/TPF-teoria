@@ -1,0 +1,80 @@
+package com.structurizr;
+
+import com.structurizr.command.*;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@SpringBootApplication
+public class Application {
+
+	private static final Map<String, AbstractCommand> COMMANDS = new LinkedHashMap<>();
+
+	static {
+		register(new PlaygroundCommand());
+		register(new LocalCommand());
+		register(new ServerCommand());
+
+		register(new PushCommand());
+		register(new PullCommand());
+		register(new LockCommand());
+		register(new UnlockCommand());
+		register(new BranchesCommand());
+		register(new CreateCommand());
+		register(new DeleteCommand());
+		register(new RegenerateApiKeyCommand());
+
+		register(new ExportCommand());
+		register(new GenerateCommand());
+		register(new MergeCommand());
+		register(new ValidateCommand());
+		register(new InspectCommand());
+		register(new ListCommand());
+		register(new VersionCommand());
+		register(new AbstractCommand("help") {
+			@Override
+			public boolean run(String... args) {
+				printUsage();
+				return true;
+			}
+		});
+	}
+
+	private static void register(AbstractCommand command) {
+		COMMANDS.put(command.getName(), command);
+	}
+
+	public static void main(String[] args) {
+		if (args == null || args.length == 0) {
+			printUsage();
+			System.exit(1);
+		}
+
+		boolean success;
+		try {
+			String commandName = args[0];
+			AbstractCommand command = COMMANDS.get(commandName);
+			if (command != null) {
+				success = command.run(args);
+			} else {
+				System.out.println("Unknown command: " + commandName);
+				printUsage();
+				success = false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			success = false;
+		}
+
+		if (!success) {
+			System.exit(1);
+		}
+	}
+
+	private static void printUsage() {
+		String commandList = String.join("|", COMMANDS.keySet());
+		System.out.println(String.format("Usage: %s [arguments]", commandList));
+	}
+
+}
