@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title CU-14 — Certificar y valorizar subcontrato: contexto
+
+Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
+Person(SUB, "Subcontratista", "Presenta las mediciones correspondientes a su contrato y consulta el estado de sus mediciones, certificados y saldos.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System_Ext(ERP, "Sistema ERP", "Motor financiero y documental.")
+
+Rel(SUP, obra, "Certificar y valorizar subcontrato")
+Rel(SUB, obra, "Certificar y valorizar subcontrato")
+Rel(obra, ERP, "Entrega el resultado del caso de uso")
+@enduml

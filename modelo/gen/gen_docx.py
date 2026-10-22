@@ -11,7 +11,8 @@ from docx.shared import Cm, Pt
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 PROY = RAIZ.parent
-M = yaml.safe_load((RAIZ / "modelo.yaml").read_text(encoding="utf-8"))
+from modelo import cargar
+M = cargar()
 OUT = RAIZ / "out"
 
 meta     = M["meta"]

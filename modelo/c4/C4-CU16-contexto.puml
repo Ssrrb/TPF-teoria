@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title CU-16 — Consultar reportes y Curva S: contexto
+
+Person(ADM, "Administrador", "Configura la obra, sus impuestos y sus fondos de retención, autoriza la emisión del certificado sobre la revisión ya conformada, aprueba los movimientos presupuestarios y habilita la reapertura auditada.")
+Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+
+Rel(ADM, obra, "Consultar reportes y Curva S")
+Rel(SUP, obra, "Consultar reportes y Curva S")
+@enduml

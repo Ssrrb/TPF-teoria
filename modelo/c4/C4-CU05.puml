@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-05 — Aprobar o rechazar medición oficial
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(AprobarMedicionControlador, "AprobarMedicionControlador", "Controller / Presenter")
+Component(AprobarMedicionInteractor, "AprobarMedicionInteractor", "Interactor")
+Component(EvaluarSaldoServicio, "EvaluarSaldoServicio", "Interactor")
+Component(LineaPresupuesto, "LineaPresupuesto", "Entidad de dominio")
+Component(MedicionOficial, "MedicionOficial", "Entidad de dominio")
+Component(PropuestaPendiente, "PropuestaPendiente", "Entidad de dominio")
+Component(IPresupuestoRepositorio, "IPresupuestoRepositorio", "Interfaz")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IMedicionRepositorio, "IMedicionRepositorio", "Interfaz")
+
+Rel(web, AprobarMedicionControlador, "1. listarMediciones(obraId, periodoId)")
+Rel(AprobarMedicionControlador, AprobarMedicionInteractor, "2. obtenerPendientes(periodoId)")
+Rel(AprobarMedicionInteractor, IMedicionRepositorio, "3. listarPorPeriodo(periodoId)")
+Rel(web, AprobarMedicionControlador, "4. aprobarMedicion(medicionId)")
+Rel(AprobarMedicionControlador, AprobarMedicionInteractor, "5. ejecutar(medicionId, actorId)")
+Rel(AprobarMedicionInteractor, IMedicionRepositorio, "6. acumuladoAprobado(lineaId)")
+Rel(AprobarMedicionInteractor, IPresupuestoRepositorio, "7. buscarVersionVigente(obraId)")
+Rel(AprobarMedicionInteractor, LineaPresupuesto, "8. saldo(cantidadAcumulada)")
+Rel(AprobarMedicionInteractor, EvaluarSaldoServicio, "9. evaluar(cantidadMedida, saldo)")
+Rel(AprobarMedicionInteractor, PropuestaPendiente, "10. crear(exceso, estado = Pendiente)")
+Rel(AprobarMedicionInteractor, MedicionOficial, "11. aprobar(cantidadCertificable, actorId, fecha)")
+Rel(AprobarMedicionInteractor, MedicionOficial, "12. aprobar(cantidadMedida, actorId, fecha)")
+Rel(AprobarMedicionInteractor, IMedicionRepositorio, "13. guardar(medicion)")
+Rel(AprobarMedicionInteractor, IAuditoriaRepositorio, "14. registrar(actor, fecha, obra, version, decisión)")
+@enduml

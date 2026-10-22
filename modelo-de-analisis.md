@@ -250,36 +250,32 @@ Puertos declarados por el dominio:
 | `IAuditoriaRepositorio` | `registrar(entrada)` | `AuditoriaRepositorioSQL` |
 | `IReloj` | `ahora()` | `RelojSistema` |
 
-Vistas C4 generadas con Structurizr (`modelo/workspace.dsl`, salida en `modelo/out/c4/`):
+Vistas C4 generadas con C4-PlantUML (`modelo/gen/gen_c4.py`, salida en `modelo/out/c4/`):
 
-
-**Paisaje.** Obra Studio, el ERP y las personas que intervienen.
-
-![Paisaje](modelo/out/c4/structurizr-Paisaje.png)
 
 **Contexto.** Obra Studio y su entorno.
 
-![Contexto](modelo/out/c4/structurizr-Contexto.png)
+![Contexto](modelo/out/c4/C4-Contexto.png)
 
 **Contenedores.** Estructura interna de Obra Studio.
 
-![Contenedores](modelo/out/c4/structurizr-Contenedores.png)
+![Contenedores](modelo/out/c4/C4-Contenedores.png)
 
 **Componentes.** Los cuatro anillos de Clean Architecture dentro del Motor ECMS.
 
-![Componentes](modelo/out/c4/structurizr-Componentes.png)
+![Componentes](modelo/out/c4/C4-Componentes.png)
 
 **CU02.** Interacción de componentes al importar el presupuesto.
 
-![CU02](modelo/out/c4/structurizr-CU02.png)
+![CU02](modelo/out/c4/C4-CU02.png)
 
 **CU05.** Interacción de componentes al aprobar una medición.
 
-![CU05](modelo/out/c4/structurizr-CU05.png)
+![CU05](modelo/out/c4/C4-CU05.png)
 
 **CU09.** Interacción de componentes al emitir un certificado.
 
-![CU09](modelo/out/c4/structurizr-CU09.png)
+![CU09](modelo/out/c4/C4-CU09.png)
 
 
 Diagramas UML del entregable (`modelo/out/`):
@@ -328,7 +324,9 @@ modelo/
   modelo.yaml      fuente única: actores, requisitos, casos de uso, entidades, estados, tablas
   gen/validar.py   chequeos de consistencia; el build falla si algo no cierra
   gen/gen_puml.py  genera los diagramas UML
+  gen/gen_c4.py    genera las vistas C4-PlantUML
   gen/gen_dsl.py   genera el workspace de Structurizr
+  gen/modelo.py    carga el YAML y resuelve ids a nombres
   gen/gen_docx.py  genera el documento con el formato de la cátedra
   gen/gen_md.py    genera este archivo
   build.sh         ejecuta todo lo anterior de punta a punta

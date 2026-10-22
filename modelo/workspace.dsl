@@ -271,6 +271,10 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
             image out/15-estado-MovimientoPresupuestario.png
             title "UML — 15-estado-MovimientoPresupuestario"
         }
+        image * "uml16modeloconceptual" {
+            image out/16-modelo-conceptual.png
+            title "UML — 16-modelo-conceptual"
+        }
 
         styles {
             element "Person" {

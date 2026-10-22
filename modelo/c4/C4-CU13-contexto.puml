@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title CU-13 — Presentar medición de subcontrato: contexto
+
+Person(SUB, "Subcontratista", "Presenta las mediciones correspondientes a su contrato y consulta el estado de sus mediciones, certificados y saldos.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+
+Rel(SUB, obra, "Presentar medición de subcontrato")
+@enduml

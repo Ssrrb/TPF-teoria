@@ -4,7 +4,8 @@ import pathlib, yaml
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 PROY = RAIZ.parent
-M = yaml.safe_load((RAIZ / "modelo.yaml").read_text(encoding="utf-8"))
+from modelo import cargar
+M = cargar()
 actores = {a["id"]: a for a in M["actores"]}
 L = []
 w = L.append
@@ -112,11 +113,10 @@ w("|---|---|---|")
 for p_ in M["puertos"]:
     w(f'| `{p_["nombre"]}` | {", ".join("`"+x+"`" for x in p_["metodos"])} | `{p_["adaptador"]}` |')
 w("")
-w("Vistas C4 generadas con Structurizr (`modelo/workspace.dsl`, salida en `modelo/out/c4/`):")
+w("Vistas C4 generadas con C4-PlantUML (`modelo/gen/gen_c4.py`, salida en `modelo/out/c4/`):")
 w("")
 w("")
-for n, d in [("Paisaje", "Obra Studio, el ERP y las personas que intervienen."),
-             ("Contexto", "Obra Studio y su entorno."),
+for n, d in [("Contexto", "Obra Studio y su entorno."),
              ("Contenedores", "Estructura interna de Obra Studio."),
              ("Componentes", "Los cuatro anillos de Clean Architecture dentro del Motor ECMS."),
              ("CU02", "Interacción de componentes al importar el presupuesto."),
@@ -124,7 +124,7 @@ for n, d in [("Paisaje", "Obra Studio, el ERP y las personas que intervienen."),
              ("CU09", "Interacción de componentes al emitir un certificado.")]:
     w(f'**{n}.** {d}')
     w("")
-    w(f'![{n}](modelo/out/c4/structurizr-{n}.png)')
+    w(f'![{n}](modelo/out/c4/C4-{n}.png)')
     w("")
 w("")
 
@@ -156,7 +156,7 @@ w("modelo/")
 w("  modelo.yaml      fuente única: actores, requisitos, casos de uso, entidades, estados, tablas")
 w("  gen/validar.py   chequeos de consistencia; el build falla si algo no cierra")
 w("  gen/gen_puml.py  genera los diagramas UML")
-w("  gen/gen_dsl.py   genera el workspace de Structurizr")
+w("  gen/gen_c4.py    genera las vistas C4-PlantUML\n  gen/gen_dsl.py   genera el workspace de Structurizr\n  gen/modelo.py    carga el YAML y resuelve ids a nombres")
 w("  gen/gen_docx.py  genera el documento con el formato de la cátedra")
 w("  gen/gen_md.py    genera este archivo")
 w("  build.sh         ejecuta todo lo anterior de punta a punta")

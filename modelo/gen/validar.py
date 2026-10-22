@@ -4,7 +4,15 @@ import sys, pathlib, yaml
 from collections import Counter
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
-M = yaml.safe_load((RAIZ / "modelo.yaml").read_text(encoding="utf-8"))
+from modelo import cargar, ModeloError
+try:
+    M = cargar()
+except ModeloError as exc:
+    print("=" * 74); print("  Referencias del modelo"); print("=" * 74)
+    for e_ in exc.errores:
+        print(f"  ERROR  {e_}")
+    print(f"\n{len(exc.errores)} error(es). El modelo no es consistente.")
+    sys.exit(1)
 
 errores, avisos = [], []
 def err(m): errores.append(m)

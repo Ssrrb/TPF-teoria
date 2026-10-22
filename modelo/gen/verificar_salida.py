@@ -4,7 +4,8 @@ import pathlib, re, subprocess, sys, yaml
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 PROY = RAIZ.parent
-M = yaml.safe_load((RAIZ / "modelo.yaml").read_text(encoding="utf-8"))
+from modelo import cargar
+M = cargar()
 pdf = PROY / "TPF-Obra-Studio.pdf"
 texto = subprocess.run(["pdftotext", "-layout", str(pdf), "-"],
                        capture_output=True, text=True).stdout
@@ -40,7 +41,7 @@ figs = set(re.findall(r"Figura (\d+)\.", plano))
 chk(len(figs) >= 11, f"Se esperan al menos 11 figuras, se hallaron {len(figs)}.")
 # toda imagen generada se usa o se declara
 pngs = {p.name for p in (RAIZ / "out").glob("*.png")}
-chk(len(pngs) == 15, f"Se esperan 15 diagramas UML, hay {len(pngs)}.")
+chk(len(pngs) == 16, f"Se esperan 16 diagramas UML, hay {len(pngs)}.")
 
 print("=" * 74)
 print(f"  Verificación de salida — {pdf.name}")

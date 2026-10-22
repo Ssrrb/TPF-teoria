@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Contenedores — Obra Studio
+
+Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia y corrige los borradores devueltos.")
+Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
+Person(ADM, "Administrador", "Configura la obra, sus impuestos y sus fondos de retención, autoriza la emisión del certificado sobre la revisión ya conformada, aprueba los movimientos presupuestarios y habilita la reapertura auditada.")
+Person(SUB, "Subcontratista", "Presenta las mediciones correspondientes a su contrato y consulta el estado de sus mediciones, certificados y saldos.")
+Person(CLI, "Cliente", "Comitente de la obra.")
+Person(TES, "Finanzas y Tesorería", "Opera dentro del ERP.")
+
+System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")
+System_Boundary(obra, "Obra Studio") {
+  Container(web, "Aplicación Web", "React + TypeScript", "Formularios de carga, medición y certificación.")
+  Container(ecms, "Motor ECMS", "TypeScript", "Reglas de obra, presupuesto, medición y certificación.")
+  ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")
+  ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas de origen, evidencias y certificados exportados.")
+}
+
+Rel(ING, web, "Carga el presupuesto y registra la medición oficial", "HTTPS")
+Rel(SUP, web, "Aprueba mediciones y otorga la conformidad técnica", "HTTPS")
+Rel(ADM, web, "Autoriza la emisión y aprueba movimientos presupuestarios", "HTTPS")
+Rel(SUB, web, "Presenta las mediciones de su contrato", "HTTPS")
+Rel(web, ecms, "Invoca los casos de uso", "HTTPS/JSON")
+Rel(ecms, bd, "Lee y escribe", "SQL")
+Rel(ecms, archivos, "Conserva planillas, evidencias y exportaciones", "API de objetos")
+Rel(ecms, erp, "Publica el certificado aprobado", "Evento de dominio")
+@enduml

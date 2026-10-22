@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title CU-10 — Derivar documento financiero en ERP: contexto
+
+Person(TES, "Finanzas y Tesorería", "Opera dentro del ERP.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System_Ext(ERP, "Sistema ERP", "Motor financiero y documental.")
+
+Rel(TES, obra, "Derivar documento financiero en ERP")
+Rel(obra, ERP, "Entrega el resultado del caso de uso")
+@enduml

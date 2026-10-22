@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title CU-08 — Devolver borrador para corrección: contexto
+
+Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+
+Rel(SUP, obra, "Devolver borrador para corrección")
+@enduml

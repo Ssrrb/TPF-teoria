@@ -3,7 +3,8 @@
 import pathlib, yaml
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
-M = yaml.safe_load((RAIZ / "modelo.yaml").read_text(encoding="utf-8"))
+from modelo import cargar
+M = cargar()
 actores = {a["id"]: a for a in M["actores"]}
 casos   = {c["id"]: c for c in M["casos_uso"]}
 puertos = {p["nombre"]: p for p in M["puertos"]}

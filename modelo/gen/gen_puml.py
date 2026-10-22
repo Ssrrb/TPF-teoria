@@ -3,7 +3,8 @@
 import pathlib, yaml
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
-M = yaml.safe_load((RAIZ / "modelo.yaml").read_text(encoding="utf-8"))
+from modelo import cargar
+M = cargar()
 UML = RAIZ / "uml"; UML.mkdir(exist_ok=True)
 
 actores   = {a["id"]: a for a in M["actores"]}
@@ -323,6 +324,27 @@ def gen_der():
     L.append("@enduml")
     escribir("11-entidad-relacion.puml", "\n".join(L))
 
+# ------------------------------------------------------------ modelo conceptual
+def gen_conceptual():
+    """Modelo de dominio: solo conceptos y asociaciones con multiplicidad, sin atributos ni capas.
+    Se omiten las relaciones marcadas 'detalle' (usuario como autor) para que se lea."""
+    L = ["@startuml", CAB.rstrip(), "skinparam nodesep 40", "skinparam ranksep 70",
+         "hide circle", "hide members", "skinparam classBackgroundColor #FFFFFF",
+         f'title Modelo Conceptual — {M["meta"]["sistema"]}', ""]
+    rels = [r for r in M["relaciones"] if not r.get("detalle")
+            and entidades[r["a"]].get("tabla") and entidades[r["b"]].get("tabla")]
+    usadas = {x for r in rels for x in (r["a"], r["b"])}
+    for e in M["entidades"]:
+        if e.get("tabla") and e["nombre"] in usadas:
+            L.append(f'class {e["nombre"]}')
+    L.append("")
+    for r in rels:
+        flecha = {"composicion": "*--", "agregacion": "o--", "asociacion": "--"}[r["tipo"]]
+        rol = f' : {r["rol"]}' if r.get("rol") else ""
+        L.append(f'{r["a"]} "{r["ca"]}" {flecha} "{r["cb"]}" {r["b"]}{rol}')
+    L.append("@enduml")
+    escribir("16-modelo-conceptual.puml", "\n".join(L))
+
 # --------------------------------------------------------------------- estados
 def gen_estados():
     for i, (ent, maq) in enumerate(M["estados"].items(), start=12):
@@ -343,5 +365,5 @@ def gen_estados():
 if __name__ == "__main__":
     print("Generando diagramas desde modelo.yaml:")
     gen_casos_uso(); gen_clases_cu(); gen_secuencias()
-    gen_clases_persistentes(); gen_der(); gen_estados()
+    gen_clases_persistentes(); gen_der(); gen_estados(); gen_conceptual()
     print(f"\n{len(list(UML.glob('*.puml')))} diagramas generados en modelo/uml/")

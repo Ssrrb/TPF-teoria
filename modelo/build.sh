@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Reproduce todos los diagramas y el documento desde modelo.yaml.
-# Requiere: uv (para pyyaml), plantuml, graphviz, pandoc, libreoffice y java 21.
+# Requiere: uv (para pyyaml), plantuml (con la stdlib C4), graphviz, pandoc, libreoffice, poppler y java 21.
 set -euo pipefail
 cd "$(dirname "$0")"
 RAIZ=".."
@@ -12,13 +12,18 @@ echo "==> 1/8  Validando el modelo"
 $PY gen/validar.py
 
 echo "==> 2/8  Generando fuentes UML"
+rm -f uml/*.puml
 $PY gen/gen_puml.py
 
 echo "==> 3/8  Renderizando UML a PNG"
 rm -f out/*.png
 plantuml -tpng -o ../out uml/*.puml
 
-echo "==> 4/8  Generando y validando el workspace de Structurizr"
+echo "==> 4/8  Generando las vistas C4 (librería C4-PlantUML)"
+rm -f c4/*.puml out/c4/*.png
+mkdir -p c4 out/c4
+$PY gen/gen_c4.py
+# Structurizr valida el mismo modelo y conserva el workspace navegable (workspace.dsl)
 $PY gen/gen_dsl.py
 if [ ! -f "$WAR" ]; then
   echo "    (compilando Structurizr por primera vez; puede tardar varios minutos)"
@@ -28,11 +33,7 @@ fi
 java -jar "$WAR" validate -w workspace.dsl
 java -jar "$WAR" inspect  -w workspace.dsl
 
-echo "==> 5/8  Exportando y renderizando las vistas C4"
-rm -f c4/*.puml out/c4/*.png
-mkdir -p c4 out/c4
-java -jar "$WAR" export -w workspace.dsl -f plantuml -o c4 > /dev/null
-rm -f c4/*-key.puml
+echo "==> 5/8  Renderizando las vistas C4 a PNG"
 plantuml -tpng -o ../out/c4 c4/*.puml
 
 echo "==> 6/8  Generando el archivo de apoyo"

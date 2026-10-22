@@ -46,21 +46,21 @@ alcance:
 # clase = nombre en el modelo; implementacion = contraparte en el código real.
 # ------------------------------------------------------------------------------
 vocabulario:
-  - { termino: Obra,                      gloss: work site,              clase: Obra,                      implementacion: "projects (fila)" }
-  - { termino: Presupuesto,               gloss: budget,                 clase: Presupuesto,               implementacion: "ProjectFile / budgets" }
-  - { termino: Versión de presupuesto,    gloss: budget version,         clase: VersionPresupuesto,        implementacion: "budgets.revision + budget_operations" }
-  - { termino: Rubro,                     gloss: chapter,                clase: LineaPresupuesto,          implementacion: "CostItem.rowType='chapter'" }
-  - { termino: Ítem,                      gloss: budget line,            clase: LineaPresupuesto,          implementacion: "CostItem.rowType='begrotingspost'" }
-  - { termino: ACU,                       gloss: unit cost analysis,     clase: AnalisisCostoUnitario,     implementacion: "CostItem.acu + calculateAcu()" }
-  - { termino: Medición oficial,          gloss: official measurement,   clase: MedicionOficial,           implementacion: "no implementado (especificado)" }
-  - { termino: Período,                   gloss: period,                 clase: Periodo,                   implementacion: "no implementado (especificado)" }
-  - { termino: Certificado de avance,     gloss: advance certificate,    clase: Certificado,               implementacion: "no implementado (especificado)" }
-  - { termino: Valorización,              gloss: valuation,              clase: Valorizacion,              implementacion: "extiende el wiki: importe calculado del certificado" }
-  - { termino: Movimiento presupuestario, gloss: budget movement,        clase: MovimientoPresupuestario,  implementacion: "budgets kind='adendas', capítulo AD-N" }
-  - { termino: Subcontrato,               gloss: subcontract,            clase: Subcontrato,               implementacion: "no implementado (especificado)" }
-  - { termino: Socio,                     gloss: partner,                clase: Socio,                     implementacion: "no implementado (especificado)" }
-  - { termino: Curva S,                   gloss: S-curve,                clase: "—",                       derivado_de: [LineaCertificado, VersionPresupuesto, Periodo], implementacion: "extiende el wiki: reporte derivado, sin tabla propia" }
-  - { termino: Fondo de reparo,           gloss: retention fund,         clase: RetencionAplicada,         implementacion: "no implementado (especificado)" }
+  - { termino: Obra,                      gloss: work site,              clase: obra,                      implementacion: "projects (fila)" }
+  - { termino: Presupuesto,               gloss: budget,                 clase: presupuesto,               implementacion: "ProjectFile / budgets" }
+  - { termino: Versión de presupuesto,    gloss: budget version,         clase: version_presupuesto,        implementacion: "budgets.revision + budget_operations" }
+  - { termino: Rubro,                     gloss: chapter,                clase: linea_presupuesto,          implementacion: "CostItem.rowType='chapter'" }
+  - { termino: Ítem,                      gloss: budget line,            clase: linea_presupuesto,          implementacion: "CostItem.rowType='begrotingspost'" }
+  - { termino: ACU,                       gloss: unit cost analysis,     clase: analisis_costo_unitario,     implementacion: "CostItem.acu + calculateAcu()" }
+  - { termino: Medición oficial,          gloss: official measurement,   clase: medicion_oficial,           implementacion: "no implementado (especificado)" }
+  - { termino: Período,                   gloss: period,                 clase: periodo,                   implementacion: "no implementado (especificado)" }
+  - { termino: Certificado de avance,     gloss: advance certificate,    clase: certificado,               implementacion: "no implementado (especificado)" }
+  - { termino: Valorización,              gloss: valuation,              clase: valorizacion,              implementacion: "extiende el wiki: importe calculado del certificado" }
+  - { termino: Movimiento presupuestario, gloss: budget movement,        clase: movimiento_presupuestario,  implementacion: "budgets kind='adendas', capítulo AD-N" }
+  - { termino: Subcontrato,               gloss: subcontract,            clase: subcontrato,               implementacion: "no implementado (especificado)" }
+  - { termino: Socio,                     gloss: partner,                clase: socio,                     implementacion: "no implementado (especificado)" }
+  - { termino: Curva S,                   gloss: S-curve,                clase: "—",                       derivado_de: [linea_certificado, version_presupuesto, periodo], implementacion: "extiende el wiki: reporte derivado, sin tabla propia" }
+  - { termino: Fondo de reparo,           gloss: retention fund,         clase: retencion_aplicada,         implementacion: "no implementado (especificado)" }
 
 # ------------------------------------------------------------------------------
 # ACTORES. Un id, un nombre. Todo diagrama los referencia por id.
@@ -700,11 +700,13 @@ relaciones_cu:
 
 # ------------------------------------------------------------------------------
 # ENTIDADES. Fuente del diagrama de clases del CU, de clases persistentes y del DER.
+# id: estable, lo que referencia el resto del modelo. nombre: visible, se cambia en un solo lugar.
 # derivado:true  -> se marca "/" en UML y NO se genera columna en el DER (L2-16 del wiki).
 # tabla: ausente -> la clase no persiste (objeto de valor).
 # ------------------------------------------------------------------------------
 entidades:
-  - nombre: Organizacion
+  - id: organizacion
+    nombre: Organizacion
     paquete: Organización y seguridad
     tabla: organizacion
     atributos:
@@ -712,14 +714,16 @@ entidades:
       - { n: nombre, t: String, sql: "VARCHAR(160)" }
       - { n: pais, t: String, sql: "CHAR(2)" }
       - { n: moneda, t: String, sql: "CHAR(3)" }
-  - nombre: Usuario
+  - id: usuario
+    nombre: Usuario
     paquete: Organización y seguridad
     tabla: usuario
     atributos:
       - { n: id, t: UUID, sql: "UUID", pk: true }
       - { n: nombre, t: String, sql: "VARCHAR(160)" }
       - { n: email, t: String, sql: "VARCHAR(254)" }
-  - nombre: RolAsignado
+  - id: rol_asignado
+    nombre: RolAsignado
     paquete: Organización y seguridad
     tabla: rol_asignado
     clase_asociativa: true
@@ -727,7 +731,8 @@ entidades:
     atributos:
       - { n: rol, t: String, sql: "VARCHAR(40)" }
       - { n: vigenteDesde, t: Date, sql: "DATE" }
-  - nombre: Cliente
+  - id: cliente
+    nombre: Cliente
     paquete: Partes
     tabla: cliente
     atributos:
@@ -735,7 +740,8 @@ entidades:
       - { n: formaLegal, t: String, sql: "VARCHAR(10)" }
       - { n: identificador, t: String, sql: "VARCHAR(30)" }
       - { n: nombre, t: String, sql: "VARCHAR(160)" }
-  - nombre: Socio
+  - id: socio
+    nombre: Socio
     paquete: Partes
     tabla: socio
     atributos:
@@ -743,7 +749,8 @@ entidades:
       - { n: formaLegal, t: String, sql: "VARCHAR(10)" }
       - { n: identificador, t: String, sql: "VARCHAR(30)" }
       - { n: nombre, t: String, sql: "VARCHAR(160)" }
-  - nombre: Obra
+  - id: obra
+    nombre: Obra
     paquete: Obra y configuración
     tabla: obra
     atributos:
@@ -754,7 +761,8 @@ entidades:
       - { n: estado, t: String, sql: "VARCHAR(20)" }
       - { n: fechaInicio, t: Date, sql: "DATE", null: true }
       - { n: fechaFin, t: Date, sql: "DATE", null: true }
-  - nombre: ConfiguracionObra
+  - id: configuracion_obra
+    nombre: ConfiguracionObra
     paquete: Obra y configuración
     tabla: configuracion_obra
     atributos:
@@ -762,7 +770,8 @@ entidades:
       - { n: tasaIVA, t: Decimal, sql: "NUMERIC(5,2)" }
       - { n: moneda, t: String, sql: "CHAR(3)" }
       - { n: toleranciaDesvio, t: Decimal, sql: "NUMERIC(5,2)" }
-  - nombre: FondoRetencion
+  - id: fondo_retencion
+    nombre: FondoRetencion
     paquete: Obra y configuración
     tabla: fondo_retencion
     atributos:
@@ -772,14 +781,16 @@ entidades:
       - { n: base, t: String, sql: "VARCHAR(20)" }
       - { n: aplicaA, t: String, sql: "VARCHAR(20)" }
       - { n: activo, t: Boolean, sql: "BOOLEAN" }
-  - nombre: Presupuesto
+  - id: presupuesto
+    nombre: Presupuesto
     paquete: Presupuesto
     tabla: presupuesto
     atributos:
       - { n: id, t: UUID, sql: "UUID", pk: true }
       - { n: tipo, t: String, sql: "VARCHAR(10)" }
       - { n: moneda, t: String, sql: "CHAR(3)" }
-  - nombre: VersionPresupuesto
+  - id: version_presupuesto
+    nombre: VersionPresupuesto
     paquete: Presupuesto
     tabla: version_presupuesto
     atributos:
@@ -788,7 +799,8 @@ entidades:
       - { n: estado, t: String, sql: "VARCHAR(20)" }
       - { n: fechaActivacion, t: DateTime, sql: "TIMESTAMPTZ", null: true }
       - { n: montoContractual, t: Decimal, derivado: true }
-  - nombre: LineaPresupuesto
+  - id: linea_presupuesto
+    nombre: LineaPresupuesto
     paquete: Presupuesto
     tabla: linea_presupuesto
     atributos:
@@ -803,7 +815,8 @@ entidades:
       - { n: importe, t: Decimal, derivado: true }
       - { n: cantidadMedida, t: Decimal, derivado: true }
       - { n: saldo, t: Decimal, derivado: true }
-  - nombre: ArchivoOrigen
+  - id: archivo_origen
+    nombre: ArchivoOrigen
     paquete: Presupuesto
     tabla: archivo_origen
     atributos:
@@ -812,7 +825,8 @@ entidades:
       - { n: hashSHA256, t: String, sql: "CHAR(64)" }
       - { n: ruta, t: String, sql: "VARCHAR(500)" }
       - { n: fechaCarga, t: DateTime, sql: "TIMESTAMPTZ" }
-  - nombre: InformeImportacion
+  - id: informe_importacion
+    nombre: InformeImportacion
     paquete: Presupuesto
     tabla: informe_importacion
     atributos:
@@ -822,7 +836,8 @@ entidades:
       - { n: tolerancia, t: Decimal, sql: "NUMERIC(24,12)" }
       - { n: cuadra, t: Boolean, sql: "BOOLEAN" }
       - { n: diferencia, t: Decimal, derivado: true }
-  - nombre: AnalisisCostoUnitario
+  - id: analisis_costo_unitario
+    nombre: AnalisisCostoUnitario
     paquete: Presupuesto
     tabla: analisis_costo_unitario
     atributos:
@@ -832,7 +847,8 @@ entidades:
       - { n: unidad, t: String, sql: "VARCHAR(12)" }
       - { n: estado, t: String, sql: "VARCHAR(12)" }
       - { n: costoUnitario, t: Decimal, derivado: true }
-  - nombre: ComponenteACU
+  - id: componente_acu
+    nombre: ComponenteACU
     paquete: Presupuesto
     tabla: componente_acu
     atributos:
@@ -844,7 +860,8 @@ entidades:
       - { n: precioUnitario, t: Decimal, sql: "NUMERIC(24,12)" }
       - { n: factorCargas, t: Decimal, sql: "NUMERIC(5,2)", null: true }
       - { n: subtotal, t: Decimal, derivado: true }
-  - nombre: Periodo
+  - id: periodo
+    nombre: Periodo
     paquete: Medición
     tabla: periodo
     atributos:
@@ -853,7 +870,8 @@ entidades:
       - { n: fechaInicio, t: Date, sql: "DATE" }
       - { n: fechaFin, t: Date, sql: "DATE" }
       - { n: estado, t: String, sql: "VARCHAR(12)" }
-  - nombre: MedicionOficial
+  - id: medicion_oficial
+    nombre: MedicionOficial
     paquete: Medición
     tabla: medicion_oficial
     atributos:
@@ -866,7 +884,8 @@ entidades:
       - { n: fechaDecision, t: DateTime, sql: "TIMESTAMPTZ", null: true }
       - { n: motivoRechazo, t: String, sql: "VARCHAR(400)", null: true }
       - { n: cantidadCertificable, t: Decimal, derivado: true }
-  - nombre: Evidencia
+  - id: evidencia
+    nombre: Evidencia
     paquete: Medición
     tabla: evidencia
     atributos:
@@ -875,7 +894,8 @@ entidades:
       - { n: tipo, t: String, sql: "VARCHAR(20)" }
       - { n: ruta, t: String, sql: "VARCHAR(500)" }
       - { n: fechaCarga, t: DateTime, sql: "TIMESTAMPTZ" }
-  - nombre: PropuestaPendiente
+  - id: propuesta_pendiente
+    nombre: PropuestaPendiente
     paquete: Medición
     tabla: propuesta_pendiente
     atributos:
@@ -883,7 +903,8 @@ entidades:
       - { n: cantidad, t: Decimal, sql: "NUMERIC(24,12)" }
       - { n: estado, t: String, sql: "VARCHAR(12)" }
       - { n: fechaRegistro, t: DateTime, sql: "TIMESTAMPTZ" }
-  - nombre: MovimientoPresupuestario
+  - id: movimiento_presupuestario
+    nombre: MovimientoPresupuestario
     paquete: Presupuesto
     tabla: movimiento_presupuestario
     atributos:
@@ -896,7 +917,8 @@ entidades:
       - { n: fechaPropuesta, t: DateTime, sql: "TIMESTAMPTZ" }
       - { n: importeUtilizado, t: Decimal, derivado: true }
       - { n: saldoDisponible, t: Decimal, derivado: true }
-  - nombre: Certificado
+  - id: certificado
+    nombre: Certificado
     paquete: Certificación
     tabla: certificado
     atributos:
@@ -906,7 +928,8 @@ entidades:
       - { n: fechaEmision, t: Date, sql: "DATE", null: true }
       - { n: destinatario, t: String, sql: "VARCHAR(160)", null: true }
       - { n: estado, t: String, sql: "VARCHAR(12)" }
-  - nombre: RevisionCertificado
+  - id: revision_certificado
+    nombre: RevisionCertificado
     paquete: Certificación
     tabla: revision_certificado
     atributos:
@@ -917,7 +940,8 @@ entidades:
       - { n: impuestos, t: Decimal, derivado: true }
       - { n: retenciones, t: Decimal, derivado: true }
       - { n: total, t: Decimal, derivado: true }
-  - nombre: LineaCertificado
+  - id: linea_certificado
+    nombre: LineaCertificado
     paquete: Certificación
     tabla: linea_certificado
     atributos:
@@ -926,7 +950,8 @@ entidades:
       - { n: precioUnitario, t: Decimal, sql: "NUMERIC(24,12)" }
       - { n: importe, t: Decimal, derivado: true }
       - { n: cantidadAcumulada, t: Decimal, derivado: true }
-  - nombre: Aprobacion
+  - id: aprobacion
+    nombre: Aprobacion
     paquete: Certificación
     tabla: aprobacion
     atributos:
@@ -934,7 +959,8 @@ entidades:
       - { n: tipo, t: String, sql: "VARCHAR(24)" }
       - { n: fecha, t: DateTime, sql: "TIMESTAMPTZ" }
       - { n: observacion, t: String, sql: "VARCHAR(400)", null: true }
-  - nombre: RetencionAplicada
+  - id: retencion_aplicada
+    nombre: RetencionAplicada
     paquete: Certificación
     tabla: retencion_aplicada
     atributos:
@@ -942,7 +968,8 @@ entidades:
       - { n: porcentaje, t: Decimal, sql: "NUMERIC(5,2)" }
       - { n: base, t: Decimal, sql: "NUMERIC(24,12)" }
       - { n: importe, t: Decimal, derivado: true }
-  - nombre: Subcontrato
+  - id: subcontrato
+    nombre: Subcontrato
     paquete: Subcontratos e integración ERP
     tabla: subcontrato
     atributos:
@@ -953,7 +980,8 @@ entidades:
       - { n: estado, t: String, sql: "VARCHAR(12)" }
       - { n: montoCertificado, t: Decimal, derivado: true }
       - { n: saldoCertificable, t: Decimal, derivado: true }
-  - nombre: DocumentoFinancieroERP
+  - id: documento_financiero_erp
+    nombre: DocumentoFinancieroERP
     paquete: Subcontratos e integración ERP
     tabla: documento_financiero_erp
     atributos:
@@ -963,7 +991,8 @@ entidades:
       - { n: fecha, t: Date, sql: "DATE" }
       - { n: monto, t: Decimal, sql: "NUMERIC(24,12)" }
       - { n: estado, t: String, sql: "VARCHAR(12)" }
-  - nombre: RegistroAuditoria
+  - id: registro_auditoria
+    nombre: RegistroAuditoria
     paquete: Organización y seguridad
     tabla: registro_auditoria
     atributos:
@@ -973,7 +1002,8 @@ entidades:
       - { n: accion, t: String, sql: "VARCHAR(40)" }
       - { n: fecha, t: DateTime, sql: "TIMESTAMPTZ" }
       - { n: detalle, t: String, sql: "VARCHAR(600)", null: true }
-  - nombre: Valorizacion
+  - id: valorizacion
+    nombre: Valorizacion
     paquete: Certificación
     objeto_valor: true
     atributos:
@@ -987,88 +1017,118 @@ entidades:
 # tipo: composicion | agregacion | asociacion
 # ------------------------------------------------------------------------------
 relaciones:
-  - { a: Organizacion, b: Obra, tipo: agregacion, ca: "1", cb: "0..*", fk_en: obra, fk_col: organizacion_id }
-  - { a: Organizacion, b: Usuario, tipo: agregacion, ca: "1", cb: "1..*", fk_en: usuario, fk_col: organizacion_id }
-  - { a: Usuario, b: RolAsignado, tipo: composicion, ca: "1", cb: "0..*", fk_en: rol_asignado, fk_col: usuario_id }
-  - { a: Obra, b: RolAsignado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: rol_asignado, fk_col: obra_id }
-  - { a: Cliente, b: Obra, tipo: asociacion, ca: "1", cb: "0..*", fk_en: obra, fk_col: cliente_id, rol: "comitente" }
-  - { a: Obra, b: ConfiguracionObra, tipo: composicion, ca: "1", cb: "1", fk_en: configuracion_obra, fk_col: obra_id }
-  - { a: ConfiguracionObra, b: FondoRetencion, tipo: composicion, ca: "1", cb: "0..*", fk_en: fondo_retencion, fk_col: configuracion_obra_id }
-  - { a: Obra, b: Presupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: presupuesto, fk_col: obra_id }
-  - { a: Presupuesto, b: VersionPresupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: version_presupuesto, fk_col: presupuesto_id }
-  - { a: VersionPresupuesto, b: LineaPresupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: linea_presupuesto, fk_col: version_presupuesto_id }
-  - { a: LineaPresupuesto, b: LineaPresupuesto, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: linea_presupuesto, fk_col: padre_id, rol: "jerarquía rubro/subrubro/ítem" }
-  - { a: VersionPresupuesto, b: ArchivoOrigen, tipo: composicion, ca: "1", cb: "0..1", fk_en: archivo_origen, fk_col: version_presupuesto_id }
-  - { a: VersionPresupuesto, b: InformeImportacion, tipo: composicion, ca: "1", cb: "0..1", fk_en: informe_importacion, fk_col: version_presupuesto_id }
-  - { a: AnalisisCostoUnitario, b: LineaPresupuesto, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: linea_presupuesto, fk_col: acu_id }
-  - { a: AnalisisCostoUnitario, b: ComponenteACU, tipo: composicion, ca: "1", cb: "1..*", fk_en: componente_acu, fk_col: acu_id }
-  - { a: Obra, b: AnalisisCostoUnitario, tipo: agregacion, ca: "1", cb: "0..*", fk_en: analisis_costo_unitario, fk_col: obra_id }
-  - { a: Obra, b: Periodo, tipo: composicion, ca: "1", cb: "0..*", fk_en: periodo, fk_col: obra_id }
-  - { a: Periodo, b: MedicionOficial, tipo: composicion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: periodo_id }
-  - { a: LineaPresupuesto, b: MedicionOficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: linea_presupuesto_id }
-  - { a: VersionPresupuesto, b: MedicionOficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: version_presupuesto_id, rol: "medida contra" }
-  - { a: Usuario, b: MedicionOficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: registrado_por, rol: "registra", detalle: true }
-  - { a: Usuario, b: MedicionOficial, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: medicion_oficial, fk_col: decidido_por, rol: "aprueba o rechaza", detalle: true }
-  - { a: MedicionOficial, b: Evidencia, tipo: composicion, ca: "1", cb: "0..*", fk_en: evidencia, fk_col: medicion_oficial_id }
-  - { a: MedicionOficial, b: PropuestaPendiente, tipo: composicion, ca: "1", cb: "0..1", fk_en: propuesta_pendiente, fk_col: medicion_oficial_id }
-  - { a: MovimientoPresupuestario, b: PropuestaPendiente, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: propuesta_pendiente, fk_col: movimiento_id, rol: "cubre" }
-  - { a: LineaPresupuesto, b: MovimientoPresupuestario, tipo: asociacion, ca: "1", cb: "0..*", fk_en: movimiento_presupuestario, fk_col: linea_presupuesto_id, rol: "objetivo" }
-  - { a: VersionPresupuesto, b: MovimientoPresupuestario, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: movimiento_presupuestario, fk_col: version_generada_id, rol: "genera" }
-  - { a: Periodo, b: Certificado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: certificado, fk_col: periodo_id }
-  - { a: Subcontrato, b: Certificado, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: certificado, fk_col: subcontrato_id }
-  - { a: Certificado, b: RevisionCertificado, tipo: composicion, ca: "1", cb: "1..*", fk_en: revision_certificado, fk_col: certificado_id }
-  - { a: RevisionCertificado, b: LineaCertificado, tipo: composicion, ca: "1", cb: "1..*", fk_en: linea_certificado, fk_col: revision_certificado_id }
-  - { a: MedicionOficial, b: LineaCertificado, tipo: asociacion, ca: "1", cb: "0..1", fk_en: linea_certificado, fk_col: medicion_oficial_id }
-  - { a: LineaPresupuesto, b: LineaCertificado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: linea_certificado, fk_col: linea_presupuesto_id }
-  - { a: RevisionCertificado, b: Aprobacion, tipo: composicion, ca: "0..1", cb: "0..*", fk_en: aprobacion, fk_col: revision_certificado_id }
-  - { a: MovimientoPresupuestario, b: Aprobacion, tipo: composicion, ca: "0..1", cb: "0..*", fk_en: aprobacion, fk_col: movimiento_id }
-  - { a: Usuario, b: Aprobacion, tipo: asociacion, ca: "1", cb: "0..*", fk_en: aprobacion, fk_col: actor_id, detalle: true }
-  - { a: RevisionCertificado, b: RetencionAplicada, tipo: composicion, ca: "1", cb: "0..*", fk_en: retencion_aplicada, fk_col: revision_certificado_id }
-  - { a: FondoRetencion, b: RetencionAplicada, tipo: asociacion, ca: "1", cb: "0..*", fk_en: retencion_aplicada, fk_col: fondo_retencion_id }
-  - { a: Certificado, b: DocumentoFinancieroERP, tipo: asociacion, ca: "1", cb: "0..1", fk_en: documento_financiero_erp, fk_col: certificado_id }
-  - { a: Obra, b: Subcontrato, tipo: agregacion, ca: "1", cb: "0..*", fk_en: subcontrato, fk_col: obra_id }
-  - { a: Socio, b: Subcontrato, tipo: asociacion, ca: "1", cb: "0..*", fk_en: subcontrato, fk_col: socio_id }
-  - { a: Usuario, b: RegistroAuditoria, tipo: asociacion, ca: "1", cb: "0..*", fk_en: registro_auditoria, fk_col: actor_id, detalle: true }
+  - { a: organizacion, b: obra, tipo: agregacion, ca: "1", cb: "0..*", fk_en: obra, fk_col: organizacion_id }
+  - { a: organizacion, b: usuario, tipo: agregacion, ca: "1", cb: "1..*", fk_en: usuario, fk_col: organizacion_id }
+  - { a: usuario, b: rol_asignado, tipo: composicion, ca: "1", cb: "0..*", fk_en: rol_asignado, fk_col: usuario_id }
+  - { a: obra, b: rol_asignado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: rol_asignado, fk_col: obra_id }
+  - { a: cliente, b: obra, tipo: asociacion, ca: "1", cb: "0..*", fk_en: obra, fk_col: cliente_id, rol: "comitente" }
+  - { a: obra, b: configuracion_obra, tipo: composicion, ca: "1", cb: "1", fk_en: configuracion_obra, fk_col: obra_id }
+  - { a: configuracion_obra, b: fondo_retencion, tipo: composicion, ca: "1", cb: "0..*", fk_en: fondo_retencion, fk_col: configuracion_obra_id }
+  - { a: obra, b: presupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: presupuesto, fk_col: obra_id }
+  - { a: presupuesto, b: version_presupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: version_presupuesto, fk_col: presupuesto_id }
+  - { a: version_presupuesto, b: linea_presupuesto, tipo: composicion, ca: "1", cb: "1..*", fk_en: linea_presupuesto, fk_col: version_presupuesto_id }
+  - { a: linea_presupuesto, b: linea_presupuesto, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: linea_presupuesto, fk_col: padre_id, rol: "jerarquía rubro/subrubro/ítem" }
+  - { a: version_presupuesto, b: archivo_origen, tipo: composicion, ca: "1", cb: "0..1", fk_en: archivo_origen, fk_col: version_presupuesto_id }
+  - { a: version_presupuesto, b: informe_importacion, tipo: composicion, ca: "1", cb: "0..1", fk_en: informe_importacion, fk_col: version_presupuesto_id }
+  - { a: analisis_costo_unitario, b: linea_presupuesto, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: linea_presupuesto, fk_col: acu_id }
+  - { a: analisis_costo_unitario, b: componente_acu, tipo: composicion, ca: "1", cb: "1..*", fk_en: componente_acu, fk_col: acu_id }
+  - { a: obra, b: analisis_costo_unitario, tipo: agregacion, ca: "1", cb: "0..*", fk_en: analisis_costo_unitario, fk_col: obra_id }
+  - { a: obra, b: periodo, tipo: composicion, ca: "1", cb: "0..*", fk_en: periodo, fk_col: obra_id }
+  - { a: periodo, b: medicion_oficial, tipo: composicion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: periodo_id }
+  - { a: linea_presupuesto, b: medicion_oficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: linea_presupuesto_id }
+  - { a: version_presupuesto, b: medicion_oficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: version_presupuesto_id, rol: "medida contra" }
+  - { a: usuario, b: medicion_oficial, tipo: asociacion, ca: "1", cb: "0..*", fk_en: medicion_oficial, fk_col: registrado_por, rol: "registra", detalle: true }
+  - { a: usuario, b: medicion_oficial, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: medicion_oficial, fk_col: decidido_por, rol: "aprueba o rechaza", detalle: true }
+  - { a: medicion_oficial, b: evidencia, tipo: composicion, ca: "1", cb: "0..*", fk_en: evidencia, fk_col: medicion_oficial_id }
+  - { a: medicion_oficial, b: propuesta_pendiente, tipo: composicion, ca: "1", cb: "0..1", fk_en: propuesta_pendiente, fk_col: medicion_oficial_id }
+  - { a: movimiento_presupuestario, b: propuesta_pendiente, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: propuesta_pendiente, fk_col: movimiento_id, rol: "cubre" }
+  - { a: linea_presupuesto, b: movimiento_presupuestario, tipo: asociacion, ca: "1", cb: "0..*", fk_en: movimiento_presupuestario, fk_col: linea_presupuesto_id, rol: "objetivo" }
+  - { a: version_presupuesto, b: movimiento_presupuestario, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: movimiento_presupuestario, fk_col: version_generada_id, rol: "genera" }
+  - { a: periodo, b: certificado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: certificado, fk_col: periodo_id }
+  - { a: subcontrato, b: certificado, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: certificado, fk_col: subcontrato_id }
+  - { a: certificado, b: revision_certificado, tipo: composicion, ca: "1", cb: "1..*", fk_en: revision_certificado, fk_col: certificado_id }
+  - { a: revision_certificado, b: linea_certificado, tipo: composicion, ca: "1", cb: "1..*", fk_en: linea_certificado, fk_col: revision_certificado_id }
+  - { a: medicion_oficial, b: linea_certificado, tipo: asociacion, ca: "1", cb: "0..1", fk_en: linea_certificado, fk_col: medicion_oficial_id }
+  - { a: linea_presupuesto, b: linea_certificado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: linea_certificado, fk_col: linea_presupuesto_id }
+  - { a: revision_certificado, b: aprobacion, tipo: composicion, ca: "0..1", cb: "0..*", fk_en: aprobacion, fk_col: revision_certificado_id }
+  - { a: movimiento_presupuestario, b: aprobacion, tipo: composicion, ca: "0..1", cb: "0..*", fk_en: aprobacion, fk_col: movimiento_id }
+  - { a: usuario, b: aprobacion, tipo: asociacion, ca: "1", cb: "0..*", fk_en: aprobacion, fk_col: actor_id, detalle: true }
+  - { a: revision_certificado, b: retencion_aplicada, tipo: composicion, ca: "1", cb: "0..*", fk_en: retencion_aplicada, fk_col: revision_certificado_id }
+  - { a: fondo_retencion, b: retencion_aplicada, tipo: asociacion, ca: "1", cb: "0..*", fk_en: retencion_aplicada, fk_col: fondo_retencion_id }
+  - { a: certificado, b: documento_financiero_erp, tipo: asociacion, ca: "1", cb: "0..1", fk_en: documento_financiero_erp, fk_col: certificado_id }
+  - { a: obra, b: subcontrato, tipo: agregacion, ca: "1", cb: "0..*", fk_en: subcontrato, fk_col: obra_id }
+  - { a: socio, b: subcontrato, tipo: asociacion, ca: "1", cb: "0..*", fk_en: subcontrato, fk_col: socio_id }
+  - { a: usuario, b: registro_auditoria, tipo: asociacion, ca: "1", cb: "0..*", fk_en: registro_auditoria, fk_col: actor_id, detalle: true }
 
 # ------------------------------------------------------------------------------
 # PUERTOS (interfaces declaradas por el dominio; la infraestructura las implementa).
 # ------------------------------------------------------------------------------
 puertos:
-  - { nombre: IPresupuestoRepositorio, metodos: ["buscarVersionVigente(obraId)", "buscarPorHash(hash)", "guardarVersion(version)"], adaptador: PresupuestoRepositorioSQL }
-  - { nombre: IAlmacenArchivos,        metodos: ["guardar(archivo)", "recuperar(ruta)"], adaptador: AlmacenArchivosS3 }
-  - { nombre: ILectorPlanilla,         metodos: ["leer(archivo)", "detectarEstructura(hojas)"], adaptador: LectorPlanillaXLSX }
-  - { nombre: IMedicionRepositorio,    metodos: ["listarPorPeriodo(periodoId)", "guardar(medicion)", "acumuladoAprobado(lineaId)"], adaptador: MedicionRepositorioSQL }
-  - { nombre: ICertificadoRepositorio, metodos: ["buscarRevision(revisionId)", "guardar(certificado)", "siguienteNumero(obraId)"], adaptador: CertificadoRepositorioSQL }
-  - { nombre: IGeneradorDocumento,     metodos: ["exportar(revision, formato)"], adaptador: GeneradorDocumentoXLSXPDF }
-  - { nombre: IPublicadorEventos,      metodos: ["publicar(evento)"], adaptador: PuenteERP }
-  - { nombre: IAuditoriaRepositorio,   metodos: ["registrar(entrada)"], adaptador: AuditoriaRepositorioSQL }
-  - { nombre: IReloj,                  metodos: ["ahora()"], adaptador: RelojSistema }
+  - { id: i_presupuesto_repositorio, nombre: IPresupuestoRepositorio, metodos: ["buscarVersionVigente(obraId)", "buscarPorHash(hash)", "guardarVersion(version)"], adaptador: presupuesto_repositorio_sql }
+  - { id: i_almacen_archivos, nombre: IAlmacenArchivos, metodos: ["guardar(archivo)", "recuperar(ruta)"], adaptador: almacen_archivos_s3 }
+  - { id: i_lector_planilla, nombre: ILectorPlanilla, metodos: ["leer(archivo)", "detectarEstructura(hojas)"], adaptador: lector_planilla_xlsx }
+  - { id: i_medicion_repositorio, nombre: IMedicionRepositorio, metodos: ["listarPorPeriodo(periodoId)", "guardar(medicion)", "acumuladoAprobado(lineaId)"], adaptador: medicion_repositorio_sql }
+  - { id: i_certificado_repositorio, nombre: ICertificadoRepositorio, metodos: ["buscarRevision(revisionId)", "guardar(certificado)", "siguienteNumero(obraId)"], adaptador: certificado_repositorio_sql }
+  - { id: i_generador_documento, nombre: IGeneradorDocumento, metodos: ["exportar(revision, formato)"], adaptador: generador_documento_xlsxpdf }
+  - { id: i_publicador_eventos, nombre: IPublicadorEventos, metodos: ["publicar(evento)"], adaptador: puente_erp }
+  - { id: i_auditoria_repositorio, nombre: IAuditoriaRepositorio, metodos: ["registrar(entrada)"], adaptador: auditoria_repositorio_sql }
+  - { id: i_reloj, nombre: IReloj, metodos: ["ahora()"], adaptador: reloj_sistema }
+
+# ------------------------------------------------------------------------------
+# COMPONENTES (clases boundary, control y adaptadores). Un id, un nombre.
+# Renombrar una clase = cambiar su 'nombre' aquí; nada más referencia el nombre.
+# contenedor (solo adaptadores): dónde vive lo que el adaptador toca (bd | archivos | erp | ecms).
+# ------------------------------------------------------------------------------
+componentes:
+  - { id: importar_presupuesto_controlador, capa: boundary, nombre: ImportarPresupuestoControlador }
+  - { id: importacion_presentador, capa: boundary, nombre: ImportacionPresentador }
+  - { id: aprobar_medicion_controlador, capa: boundary, nombre: AprobarMedicionControlador }
+  - { id: medicion_presentador, capa: boundary, nombre: MedicionPresentador }
+  - { id: emitir_certificado_controlador, capa: boundary, nombre: EmitirCertificadoControlador }
+  - { id: certificado_presentador, capa: boundary, nombre: CertificadoPresentador }
+  - { id: importar_presupuesto_interactor, capa: control, nombre: ImportarPresupuestoInteractor }
+  - { id: validar_estructura_servicio, capa: control, nombre: ValidarEstructuraServicio }
+  - { id: contrastar_totales_servicio, capa: control, nombre: ContrastarTotalesServicio }
+  - { id: aprobar_medicion_interactor, capa: control, nombre: AprobarMedicionInteractor }
+  - { id: evaluar_saldo_servicio, capa: control, nombre: EvaluarSaldoServicio }
+  - { id: emitir_certificado_interactor, capa: control, nombre: EmitirCertificadoInteractor }
+  - { id: verificar_separacion_funciones_servicio, capa: control, nombre: VerificarSeparacionFuncionesServicio }
+  - { id: calcular_valorizacion_servicio, capa: control, nombre: CalcularValorizacionServicio }
+  - { id: presupuesto_repositorio_sql, capa: adapter, contenedor: bd, nombre: PresupuestoRepositorioSQL }
+  - { id: almacen_archivos_s3, capa: adapter, contenedor: archivos, nombre: AlmacenArchivosS3 }
+  - { id: lector_planilla_xlsx, capa: adapter, contenedor: ecms, nombre: LectorPlanillaXLSX }
+  - { id: medicion_repositorio_sql, capa: adapter, contenedor: bd, nombre: MedicionRepositorioSQL }
+  - { id: certificado_repositorio_sql, capa: adapter, contenedor: bd, nombre: CertificadoRepositorioSQL }
+  - { id: generador_documento_xlsxpdf, capa: adapter, contenedor: archivos, nombre: GeneradorDocumentoXLSXPDF }
+  - { id: puente_erp, capa: adapter, contenedor: erp, nombre: PuenteERP }
+  - { id: auditoria_repositorio_sql, capa: adapter, contenedor: bd, nombre: AuditoriaRepositorioSQL }
+  - { id: reloj_sistema, capa: adapter, contenedor: ecms, nombre: RelojSistema }
 
 # ------------------------------------------------------------------------------
 # CLASES POR CASO DE USO (Clean Architecture proyectada en estereotipos Jacobson).
 # ------------------------------------------------------------------------------
 clases_cu:
   CU-02:
-    boundary: [ImportarPresupuestoControlador, ImportacionPresentador]
-    control:  [ImportarPresupuestoInteractor, ValidarEstructuraServicio, ContrastarTotalesServicio]
-    entity:   [Obra, Presupuesto, VersionPresupuesto, LineaPresupuesto, ArchivoOrigen, InformeImportacion]
-    puertos:  [IPresupuestoRepositorio, IAlmacenArchivos, ILectorPlanilla, IAuditoriaRepositorio]
+    boundary: [importar_presupuesto_controlador, importacion_presentador]
+    control:  [importar_presupuesto_interactor, validar_estructura_servicio, contrastar_totales_servicio]
+    entity:   [obra, presupuesto, version_presupuesto, linea_presupuesto, archivo_origen, informe_importacion]
+    puertos:  [i_presupuesto_repositorio, i_almacen_archivos, i_lector_planilla, i_auditoria_repositorio]
   CU-05:
-    boundary: [AprobarMedicionControlador, MedicionPresentador]
-    control:  [AprobarMedicionInteractor, EvaluarSaldoServicio]
-    entity:   [Periodo, MedicionOficial, Evidencia, LineaPresupuesto, VersionPresupuesto, PropuestaPendiente]
-    puertos:  [IMedicionRepositorio, IPresupuestoRepositorio, IAuditoriaRepositorio, IReloj]
+    boundary: [aprobar_medicion_controlador, medicion_presentador]
+    control:  [aprobar_medicion_interactor, evaluar_saldo_servicio]
+    entity:   [periodo, medicion_oficial, evidencia, linea_presupuesto, version_presupuesto, propuesta_pendiente]
+    puertos:  [i_medicion_repositorio, i_presupuesto_repositorio, i_auditoria_repositorio, i_reloj]
   CU-09:
-    boundary: [EmitirCertificadoControlador, CertificadoPresentador]
-    control:  [EmitirCertificadoInteractor, VerificarSeparacionFuncionesServicio, CalcularValorizacionServicio]
-    entity:   [Certificado, RevisionCertificado, LineaCertificado, Aprobacion, RetencionAplicada, ConfiguracionObra, FondoRetencion, Valorizacion]
-    puertos:  [ICertificadoRepositorio, IGeneradorDocumento, IPublicadorEventos, IAuditoriaRepositorio, IReloj]
+    boundary: [emitir_certificado_controlador, certificado_presentador]
+    control:  [emitir_certificado_interactor, verificar_separacion_funciones_servicio, calcular_valorizacion_servicio]
+    entity:   [certificado, revision_certificado, linea_certificado, aprobacion, retencion_aplicada, configuracion_obra, fondo_retencion, valorizacion]
+    puertos:  [i_certificado_repositorio, i_generador_documento, i_publicador_eventos, i_auditoria_repositorio, i_reloj]
 
 # ------------------------------------------------------------------------------
 # MÁQUINAS DE ESTADO. Única declaración: prosa y diagramas leen de aquí.
 # ------------------------------------------------------------------------------
 estados:
-  VersionPresupuesto:
+  version_presupuesto:
     inicial: Propuesta
     finales: [Reemplazada, Descartada]
     estados:
@@ -1080,7 +1140,7 @@ estados:
       - { de: Propuesta, a: Vigente, evento: "activar", guarda: "estructura confirmada" }
       - { de: Propuesta, a: Descartada, evento: "descartar" }
       - { de: Vigente, a: Reemplazada, evento: "activar versión posterior" }
-  MedicionOficial:
+  medicion_oficial:
     inicial: Registrada
     finales: [Aprobada]
     estados:
@@ -1091,7 +1151,7 @@ estados:
       - { de: Registrada, a: Aprobada, evento: "aprobar", guarda: "actor distinto del que registró" }
       - { de: Registrada, a: Rechazada, evento: "rechazar", guarda: "motivo informado" }
       - { de: Rechazada, a: Registrada, evento: "corregir y reenviar" }
-  Certificado:
+  certificado:
     inicial: Borrador
     finales: [Cerrado]
     estados:
@@ -1105,7 +1165,7 @@ estados:
       - { de: Emitido, a: Aprobado, evento: "autorizar", guarda: "conformidad técnica de un actor distinto" }
       - { de: Aprobado, a: Cerrado, evento: "cerrar período" }
       - { de: Cerrado, a: Borrador, evento: "reapertura autorizada", guarda: "auditada; crea revisión vinculada" }
-  MovimientoPresupuestario:
+  movimiento_presupuestario:
     inicial: Propuesto
     finales: [Vigente, Rechazado]
     estados:
@@ -1129,21 +1189,21 @@ estados:
 secuencias:
   CU-02:
     participantes:
-      - { id: ING,  tipo: actor,     nombre: "Ingeniero de Obra" }
-      - { id: CTRL, tipo: boundary,  nombre: ImportarPresupuestoControlador }
-      - { id: UC,   tipo: control,   nombre: ImportarPresupuestoInteractor }
-      - { id: VAL,  tipo: control,   nombre: ValidarEstructuraServicio }
-      - { id: TOT,  tipo: control,   nombre: ContrastarTotalesServicio }
-      - { id: LEC,  tipo: interface, nombre: ILectorPlanilla }
-      - { id: ALM,  tipo: interface, nombre: IAlmacenArchivos }
-      - { id: REP,  tipo: interface, nombre: IPresupuestoRepositorio }
-      - { id: VER,  tipo: entity,    nombre: VersionPresupuesto }
-      - { id: LIN,  tipo: entity,    nombre: LineaPresupuesto }
+      - { id: ING,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: importar_presupuesto_controlador }
+      - { id: UC,   tipo: control,   ref: importar_presupuesto_interactor }
+      - { id: VAL,  tipo: control,   ref: validar_estructura_servicio }
+      - { id: TOT,  tipo: control,   ref: contrastar_totales_servicio }
+      - { id: LEC,  tipo: interface, ref: i_lector_planilla }
+      - { id: ALM,  tipo: interface, ref: i_almacen_archivos }
+      - { id: REP,  tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: VER,  tipo: entity,    ref: version_presupuesto }
+      - { id: LIN,  tipo: entity,    ref: linea_presupuesto }
     mensajes:
       - { de: ING,  a: CTRL, msg: "importarPresupuesto(obraId, archivo)" }
       - { de: CTRL, a: UC,   msg: "ejecutar(solicitudImportacion)" }
       - { de: UC,   a: ALM,  msg: "guardar(archivo)" }
-      - { de: ALM,  a: UC,   msg: "ArchivoOrigen(hashSHA256)", tipo: return }
+      - { de: ALM,  a: UC,   msg: "{archivo_origen}(hashSHA256)", tipo: return }
       - { de: UC,   a: REP,  msg: "buscarPorHash(hashSHA256)" }
       - { de: REP,  a: UC,   msg: "versionExistente | nulo", tipo: return }
       - { frag: alt, etiqueta: "el archivo ya fue importado (RNF-07)" }
@@ -1157,7 +1217,7 @@ secuencias:
       - { de: UC,   a: VAL,  msg: "validar(lineas)" }
       - { de: VAL,  a: UC,   msg: "incidencias(hoja, fila, columna)", tipo: return }
       - { de: UC,   a: TOT,  msg: "contrastar(totalDeclarado, totalRecalculado)" }
-      - { de: TOT,  a: UC,   msg: "InformeImportacion(diferencia, cuadra)", tipo: return }
+      - { de: TOT,  a: UC,   msg: "{informe_importacion}(diferencia, cuadra)", tipo: return }
       - { de: UC,   a: CTRL, msg: "previsualizacion(estructura, totales, incidencias)", tipo: return }
       - { de: CTRL, a: ING,  msg: "muestra estructura, ambos totales y datos inválidos", tipo: return }
       - { de: ING,  a: CTRL, msg: "confirmarEstructura(rubros, unidades, agrupaciones)" }
@@ -1169,16 +1229,16 @@ secuencias:
       - { de: CTRL, a: ING,  msg: "informa el resultado de la importación", tipo: return }
   CU-05:
     participantes:
-      - { id: SUP,  tipo: actor,     nombre: "Responsable Técnico" }
-      - { id: CTRL, tipo: boundary,  nombre: AprobarMedicionControlador }
-      - { id: UC,   tipo: control,   nombre: AprobarMedicionInteractor }
-      - { id: SAL,  tipo: control,   nombre: EvaluarSaldoServicio }
-      - { id: MREP, tipo: interface, nombre: IMedicionRepositorio }
-      - { id: PREP, tipo: interface, nombre: IPresupuestoRepositorio }
-      - { id: AUD,  tipo: interface, nombre: IAuditoriaRepositorio }
-      - { id: MED,  tipo: entity,    nombre: MedicionOficial }
-      - { id: LIN,  tipo: entity,    nombre: LineaPresupuesto }
-      - { id: PRO,  tipo: entity,    nombre: PropuestaPendiente }
+      - { id: SUP,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: aprobar_medicion_controlador }
+      - { id: UC,   tipo: control,   ref: aprobar_medicion_interactor }
+      - { id: SAL,  tipo: control,   ref: evaluar_saldo_servicio }
+      - { id: MREP, tipo: interface, ref: i_medicion_repositorio }
+      - { id: PREP, tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: MED,  tipo: entity,    ref: medicion_oficial }
+      - { id: LIN,  tipo: entity,    ref: linea_presupuesto }
+      - { id: PRO,  tipo: entity,    ref: propuesta_pendiente }
     mensajes:
       - { de: SUP,  a: CTRL, msg: "listarMediciones(obraId, periodoId)" }
       - { de: CTRL, a: UC,   msg: "obtenerPendientes(periodoId)" }
@@ -1191,7 +1251,7 @@ secuencias:
       - { de: UC,   a: MREP, msg: "acumuladoAprobado(lineaId)" }
       - { de: MREP, a: UC,   msg: "cantidadAcumulada", tipo: return }
       - { de: UC,   a: PREP, msg: "buscarVersionVigente(obraId)" }
-      - { de: PREP, a: UC,   msg: "VersionPresupuesto vigente", tipo: return }
+      - { de: PREP, a: UC,   msg: "{version_presupuesto} vigente", tipo: return }
       - { de: UC,   a: LIN,  msg: "saldo(cantidadAcumulada)" }
       - { de: LIN,  a: UC,   msg: "saldo disponible", tipo: return }
       - { de: UC,   a: SAL,  msg: "evaluar(cantidadMedida, saldo)" }
@@ -1208,25 +1268,25 @@ secuencias:
       - { de: CTRL, a: SUP,  msg: "confirma la decisión y el acumulado actualizado", tipo: return }
   CU-09:
     participantes:
-      - { id: SUP,  tipo: actor,     nombre: "Responsable Técnico" }
-      - { id: ADM,  tipo: actor,     nombre: "Administrador" }
-      - { id: CTRL, tipo: boundary,  nombre: EmitirCertificadoControlador }
-      - { id: UC,   tipo: control,   nombre: EmitirCertificadoInteractor }
-      - { id: SEP,  tipo: control,   nombre: VerificarSeparacionFuncionesServicio }
-      - { id: VLZ,  tipo: control,   nombre: CalcularValorizacionServicio }
-      - { id: CREP, tipo: interface, nombre: ICertificadoRepositorio }
-      - { id: DOC,  tipo: interface, nombre: IGeneradorDocumento }
-      - { id: EVT,  tipo: interface, nombre: IPublicadorEventos }
-      - { id: REV,  tipo: entity,    nombre: RevisionCertificado }
-      - { id: APR,  tipo: entity,    nombre: Aprobacion }
-      - { id: CER,  tipo: entity,    nombre: Certificado }
+      - { id: SUP,  tipo: actor }
+      - { id: ADM,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: emitir_certificado_controlador }
+      - { id: UC,   tipo: control,   ref: emitir_certificado_interactor }
+      - { id: SEP,  tipo: control,   ref: verificar_separacion_funciones_servicio }
+      - { id: VLZ,  tipo: control,   ref: calcular_valorizacion_servicio }
+      - { id: CREP, tipo: interface, ref: i_certificado_repositorio }
+      - { id: DOC,  tipo: interface, ref: i_generador_documento }
+      - { id: EVT,  tipo: interface, ref: i_publicador_eventos }
+      - { id: REV,  tipo: entity,    ref: revision_certificado }
+      - { id: APR,  tipo: entity,    ref: aprobacion }
+      - { id: CER,  tipo: entity,    ref: certificado }
     mensajes:
       - { de: SUP,  a: CTRL, msg: "abrirRevision(revisionId)" }
       - { de: CTRL, a: UC,   msg: "obtenerRevision(revisionId)" }
       - { de: UC,   a: CREP, msg: "buscarRevision(revisionId)" }
-      - { de: CREP, a: UC,   msg: "RevisionCertificado", tipo: return }
+      - { de: CREP, a: UC,   msg: "{revision_certificado}", tipo: return }
       - { de: UC,   a: VLZ,  msg: "calcular(lineas, configuracionObra)" }
-      - { de: VLZ,  a: UC,   msg: "Valorizacion(subtotal, impuestos, retenciones, total)", tipo: return }
+      - { de: VLZ,  a: UC,   msg: "{valorizacion}(subtotal, impuestos, retenciones, total)", tipo: return }
       - { de: UC,   a: CTRL, msg: "revisión con valorización y alertas", tipo: return }
       - { de: CTRL, a: SUP,  msg: "muestra cantidades, valorización y alertas", tipo: return }
       - { de: SUP,  a: CTRL, msg: "otorgarConformidadTecnica(revisionId)" }
@@ -1286,7 +1346,7 @@ decisiones:
     hallazgo: >-
       El catálogo habla de aditivos y deductivos; la documentación de dominio no usa esos términos.
     resolucion: >-
-      Se unifican en MovimientoPresupuestario con tipo AMPLIACION, DEDUCCION o VARIACION_PRECIO,
+      Se unifican en {movimiento_presupuestario} con tipo AMPLIACION, DEDUCCION o VARIACION_PRECIO,
       que es el vocabulario del dominio.
   - id: D-03
     tema: Rol de responsable técnico
@@ -1301,14 +1361,14 @@ decisiones:
       RNF-07 exige que recargar el mismo XLSX no cree otra versión, pero la implementación actual
       calcula el hash sobre el documento ya confirmado y no sobre el archivo.
     resolucion: >-
-      ArchivoOrigen declara hashSHA256 sobre el contenido del archivo y la importación lo consulta
+      {archivo_origen} declara hashSHA256 sobre el contenido del archivo y la importación lo consulta
       antes de crear una versión, de modo que el requisito se cumple tal como está enunciado.
   - id: D-05
     tema: Doble conteo de trabajo físico
     hallazgo: >-
       RF-10 exige impedir que una misma cantidad se contabilice dos veces, sin indicar el mecanismo.
     resolucion: >-
-      Existe una sola MedicionOficial por ítem y período, con el ejecutor como atributo en lugar de
+      Existe una sola {medicion_oficial} por ítem y período, con el ejecutor como atributo en lugar de
       un registro separado para el subcontratista. El acumulado se incrementa una sola vez por
       construcción del modelo, no por una validación añadida.
   - id: D-06
@@ -1372,15 +1432,15 @@ decisiones:
 # estado: implementado | especificado
 # ------------------------------------------------------------------------------
 trazabilidad:
-  - { clase: Obra,                  estado: implementado, nota: "Fila de la tabla projects." }
-  - { clase: Presupuesto,           estado: implementado, nota: "Tabla budgets, con tipo cliente, costo o adendas." }
-  - { clase: VersionPresupuesto,    estado: implementado, nota: "Columna revision más el diario inmutable budget_operations." }
-  - { clase: LineaPresupuesto,      estado: implementado, nota: "CostItem dentro del documento del presupuesto." }
-  - { clase: AnalisisCostoUnitario, estado: implementado, nota: "Partida marcada como ACU y su cálculo." }
-  - { clase: ArchivoOrigen,         estado: implementado, nota: "Importación con hash del contenido." }
-  - { clase: InformeImportacion,    estado: implementado, nota: "Informe de importación con totales declarado y recalculado." }
-  - { clase: MedicionOficial,       estado: especificado, nota: "Documentada en el dominio; sin implementación." }
-  - { clase: Periodo,               estado: especificado, nota: "Documentada en el dominio; sin implementación." }
-  - { clase: Certificado,           estado: especificado, nota: "Módulo de certificaciones presente en el catálogo, sin implementación." }
-  - { clase: Subcontrato,           estado: especificado, nota: "Módulo de subcontratos presente en el catálogo, sin implementación." }
-  - { clase: DocumentoFinancieroERP, estado: especificado, nota: "Factura y pago del ERP; fuera del alcance implementado." }
+  - { clase: obra,                  estado: implementado, nota: "Fila de la tabla projects." }
+  - { clase: presupuesto,           estado: implementado, nota: "Tabla budgets, con tipo cliente, costo o adendas." }
+  - { clase: version_presupuesto,    estado: implementado, nota: "Columna revision más el diario inmutable budget_operations." }
+  - { clase: linea_presupuesto,      estado: implementado, nota: "CostItem dentro del documento del presupuesto." }
+  - { clase: analisis_costo_unitario, estado: implementado, nota: "Partida marcada como ACU y su cálculo." }
+  - { clase: archivo_origen,         estado: implementado, nota: "Importación con hash del contenido." }
+  - { clase: informe_importacion,    estado: implementado, nota: "Informe de importación con totales declarado y recalculado." }
+  - { clase: medicion_oficial,       estado: especificado, nota: "Documentada en el dominio; sin implementación." }
+  - { clase: periodo,               estado: especificado, nota: "Documentada en el dominio; sin implementación." }
+  - { clase: certificado,           estado: especificado, nota: "Módulo de certificaciones presente en el catálogo, sin implementación." }
+  - { clase: subcontrato,           estado: especificado, nota: "Módulo de subcontratos presente en el catálogo, sin implementación." }
+  - { clase: documento_financiero_erp, estado: especificado, nota: "Factura y pago del ERP; fuera del alcance implementado." }
