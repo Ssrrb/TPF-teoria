@@ -6,73 +6,39 @@ skinparam nodesep 40
 skinparam ranksep 70
 hide circle
 hide members
+left to right direction
 skinparam classBackgroundColor #FFFFFF
 title Modelo Conceptual — Obra Studio
 
 class Organizacion
 class Usuario
-class RolAsignado
 class Cliente
 class Socio
 class Obra
-class ConfiguracionObra
-class FondoRetencion
 class Presupuesto
 class VersionPresupuesto
 class LineaPresupuesto
-class ArchivoOrigen
-class InformeImportacion
-class AnalisisCostoUnitario
-class ComponenteACU
 class Periodo
 class MedicionOficial
-class Evidencia
-class PropuestaPendiente
 class MovimientoPresupuestario
 class Certificado
-class RevisionCertificado
-class LineaCertificado
-class Aprobacion
-class RetencionAplicada
 class Subcontrato
-class DocumentoFinancieroERP
 
 Organizacion "1" o-- "0..*" Obra
 Organizacion "1" o-- "1..*" Usuario
-Usuario "1" *-- "0..*" RolAsignado
-Obra "1" -- "0..*" RolAsignado
 Cliente "1" -- "0..*" Obra : comitente
-Obra "1" *-- "1" ConfiguracionObra
-ConfiguracionObra "1" *-- "0..*" FondoRetencion
 Obra "1" *-- "1..*" Presupuesto
 Presupuesto "1" *-- "1..*" VersionPresupuesto
 VersionPresupuesto "1" *-- "1..*" LineaPresupuesto
 LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto : jerarquía rubro/subrubro/ítem
-VersionPresupuesto "1" *-- "0..1" ArchivoOrigen
-VersionPresupuesto "1" *-- "0..1" InformeImportacion
-AnalisisCostoUnitario "0..1" -- "0..*" LineaPresupuesto
-AnalisisCostoUnitario "1" *-- "1..*" ComponenteACU
-Obra "1" o-- "0..*" AnalisisCostoUnitario
 Obra "1" *-- "0..*" Periodo
 Periodo "1" *-- "0..*" MedicionOficial
 LineaPresupuesto "1" -- "0..*" MedicionOficial
 VersionPresupuesto "1" -- "0..*" MedicionOficial : medida contra
-MedicionOficial "1" *-- "0..*" Evidencia
-MedicionOficial "1" *-- "0..1" PropuestaPendiente
-MovimientoPresupuestario "0..1" -- "0..*" PropuestaPendiente : cubre
 LineaPresupuesto "1" -- "0..*" MovimientoPresupuestario : objetivo
 VersionPresupuesto "0..1" -- "0..*" MovimientoPresupuestario : genera
 Periodo "1" -- "0..*" Certificado
 Subcontrato "0..1" -- "0..*" Certificado
-Certificado "1" *-- "1..*" RevisionCertificado
-RevisionCertificado "1" *-- "1..*" LineaCertificado
-MedicionOficial "1" -- "0..1" LineaCertificado
-LineaPresupuesto "1" -- "0..*" LineaCertificado
-RevisionCertificado "0..1" *-- "0..*" Aprobacion
-MovimientoPresupuestario "0..1" *-- "0..*" Aprobacion
-RevisionCertificado "1" *-- "0..*" RetencionAplicada
-FondoRetencion "1" -- "0..*" RetencionAplicada
-Certificado "1" -- "0..1" DocumentoFinancieroERP
 Obra "1" o-- "0..*" Subcontrato
 Socio "1" -- "0..*" Subcontrato
 @enduml

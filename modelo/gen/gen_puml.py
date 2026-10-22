@@ -327,15 +327,15 @@ def gen_der():
 # ------------------------------------------------------------ modelo conceptual
 def gen_conceptual():
     """Modelo de dominio: solo conceptos y asociaciones con multiplicidad, sin atributos ni capas.
-    Se omiten las relaciones marcadas 'detalle' (usuario como autor) para que se lea."""
+    Solo entran las entidades marcadas 'conceptual' en el YAML y las relaciones entre ellas."""
     L = ["@startuml", CAB.rstrip(), "skinparam nodesep 40", "skinparam ranksep 70",
-         "hide circle", "hide members", "skinparam classBackgroundColor #FFFFFF",
+         "hide circle", "hide members", "left to right direction", "skinparam classBackgroundColor #FFFFFF",
          f'title Modelo Conceptual — {M["meta"]["sistema"]}', ""]
     rels = [r for r in M["relaciones"] if not r.get("detalle")
-            and entidades[r["a"]].get("tabla") and entidades[r["b"]].get("tabla")]
+            and entidades[r["a"]].get("conceptual") and entidades[r["b"]].get("conceptual")]
     usadas = {x for r in rels for x in (r["a"], r["b"])}
     for e in M["entidades"]:
-        if e.get("tabla") and e["nombre"] in usadas:
+        if e.get("conceptual") and e["nombre"] in usadas:
             L.append(f'class {e["nombre"]}')
     L.append("")
     for r in rels:

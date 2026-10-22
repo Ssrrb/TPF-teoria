@@ -707,6 +707,7 @@ relaciones_cu:
 entidades:
   - id: organizacion
     nombre: Organizacion
+    conceptual: true
     paquete: Organización y seguridad
     tabla: organizacion
     atributos:
@@ -716,6 +717,7 @@ entidades:
       - { n: moneda, t: String, sql: "CHAR(3)" }
   - id: usuario
     nombre: Usuario
+    conceptual: true
     paquete: Organización y seguridad
     tabla: usuario
     atributos:
@@ -733,6 +735,7 @@ entidades:
       - { n: vigenteDesde, t: Date, sql: "DATE" }
   - id: cliente
     nombre: Cliente
+    conceptual: true
     paquete: Partes
     tabla: cliente
     atributos:
@@ -742,6 +745,7 @@ entidades:
       - { n: nombre, t: String, sql: "VARCHAR(160)" }
   - id: socio
     nombre: Socio
+    conceptual: true
     paquete: Partes
     tabla: socio
     atributos:
@@ -751,6 +755,7 @@ entidades:
       - { n: nombre, t: String, sql: "VARCHAR(160)" }
   - id: obra
     nombre: Obra
+    conceptual: true
     paquete: Obra y configuración
     tabla: obra
     atributos:
@@ -772,6 +777,7 @@ entidades:
       - { n: toleranciaDesvio, t: Decimal, sql: "NUMERIC(5,2)" }
   - id: fondo_retencion
     nombre: FondoRetencion
+    conceptual: true
     paquete: Obra y configuración
     tabla: fondo_retencion
     atributos:
@@ -783,6 +789,7 @@ entidades:
       - { n: activo, t: Boolean, sql: "BOOLEAN" }
   - id: presupuesto
     nombre: Presupuesto
+    conceptual: true
     paquete: Presupuesto
     tabla: presupuesto
     atributos:
@@ -791,6 +798,7 @@ entidades:
       - { n: moneda, t: String, sql: "CHAR(3)" }
   - id: version_presupuesto
     nombre: VersionPresupuesto
+    conceptual: true
     paquete: Presupuesto
     tabla: version_presupuesto
     atributos:
@@ -801,6 +809,7 @@ entidades:
       - { n: montoContractual, t: Decimal, derivado: true }
   - id: linea_presupuesto
     nombre: LineaPresupuesto
+    conceptual: true
     paquete: Presupuesto
     tabla: linea_presupuesto
     atributos:
@@ -862,6 +871,7 @@ entidades:
       - { n: subtotal, t: Decimal, derivado: true }
   - id: periodo
     nombre: Periodo
+    conceptual: true
     paquete: Medición
     tabla: periodo
     atributos:
@@ -872,6 +882,7 @@ entidades:
       - { n: estado, t: String, sql: "VARCHAR(12)" }
   - id: medicion_oficial
     nombre: MedicionOficial
+    conceptual: true
     paquete: Medición
     tabla: medicion_oficial
     atributos:
@@ -905,6 +916,7 @@ entidades:
       - { n: fechaRegistro, t: DateTime, sql: "TIMESTAMPTZ" }
   - id: movimiento_presupuestario
     nombre: MovimientoPresupuestario
+    conceptual: true
     paquete: Presupuesto
     tabla: movimiento_presupuestario
     atributos:
@@ -919,6 +931,7 @@ entidades:
       - { n: saldoDisponible, t: Decimal, derivado: true }
   - id: certificado
     nombre: Certificado
+    conceptual: true
     paquete: Certificación
     tabla: certificado
     atributos:
@@ -970,6 +983,7 @@ entidades:
       - { n: importe, t: Decimal, derivado: true }
   - id: subcontrato
     nombre: Subcontrato
+    conceptual: true
     paquete: Subcontratos e integración ERP
     tabla: subcontrato
     atributos:
