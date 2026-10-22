@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-14 — Certificar y valorizar subcontrato
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(CertificarSubcontratoControlador, "CertificarSubcontratoControlador", "Controller / Presenter")
+Component(CalcularValorizacionServicio, "CalcularValorizacionServicio", "Interactor")
+Component(CertificarSubcontratoInteractor, "CertificarSubcontratoInteractor", "Interactor")
+Component(Certificado, "Certificado", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IMedicionRepositorio, "IMedicionRepositorio", "Interfaz")
+Component(ICertificadoRepositorio, "ICertificadoRepositorio", "Interfaz")
+Component(IPublicadorEventos, "IPublicadorEventos", "Interfaz")
+Component(ISubcontratoRepositorio, "ISubcontratoRepositorio", "Interfaz")
+
+Rel(web, CertificarSubcontratoControlador, "1. certificarSubcontrato(subcontratoId, periodoId)")
+Rel(CertificarSubcontratoControlador, CertificarSubcontratoInteractor, "2. ejecutar(subcontratoId, periodoId, actorId)")
+Rel(CertificarSubcontratoInteractor, ISubcontratoRepositorio, "3. buscar(subcontratoId)")
+Rel(CertificarSubcontratoInteractor, IMedicionRepositorio, "4. listarPorSubcontrato(subcontratoId)")
+Rel(CertificarSubcontratoInteractor, Certificado, "5. crear(tipo = subcontrato, estado = Borrador)")
+Rel(CertificarSubcontratoInteractor, CalcularValorizacionServicio, "6. calcular(lineas, preciosContrato)")
+Rel(web, CertificarSubcontratoControlador, "7. emitirCertificado(certificadoId)")
+Rel(CertificarSubcontratoControlador, CertificarSubcontratoInteractor, "8. emitir(certificadoId, actorId)")
+Rel(CertificarSubcontratoInteractor, ICertificadoRepositorio, "9. siguienteNumero(obraId)")
+Rel(CertificarSubcontratoInteractor, Certificado, "10. emitir(numero, fecha, destinatario, actorId)")
+Rel(CertificarSubcontratoInteractor, ICertificadoRepositorio, "11. guardar(certificado)")
+Rel(CertificarSubcontratoInteractor, IAuditoriaRepositorio, "12. registrar(actor, fecha, obra, certificado, emisión)")
+Rel(CertificarSubcontratoInteractor, IPublicadorEventos, "13. publicar(CertificadoEmitido(certificadoId))")
+Rel(web, CertificarSubcontratoControlador, "14. verCertificado(certificadoId)")
+Rel(CertificarSubcontratoControlador, CertificarSubcontratoInteractor, "15. consultar(certificadoId, actorId)")
+@enduml

@@ -1,0 +1,98 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-16 — Consultar reportes y Curva S
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class ConsultarReportesControlador <<Boundary>> {
+    +consultarCurvaS(obraId, fechaCorte)
+    +consultarResumen(obraId, fechaCorte)
+    +consultarRespaldo(cifraId)
+  }
+  class ReportePresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class ConsultarReportesInteractor <<Control>> {
+    +curvaS(obraId, fechaCorte, actorId)
+    +resumen(obraId, fechaCorte, actorId)
+    +respaldo(cifraId)
+  }
+  class GenerarCurvaSServicio <<Control>> {
+    +componer(series, fechaCorte)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class VersionPresupuesto <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -estado : String
+  -fechaActivacion : DateTime
+  -/montoContractual : Decimal
+  }
+  class LineaPresupuesto <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -tipo : String
+  -/importe : Decimal
+  -/cantidadMedida : Decimal
+  -/saldo : Decimal
+  -...
+  }
+  class Periodo <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -fechaInicio : Date
+  -fechaFin : Date
+  -...
+  }
+  class LineaCertificado <<Entity>> {
+  +id : UUID
+  -cantidadPeriodo : Decimal
+  -precioUnitario : Decimal
+  -/importe : Decimal
+  -/cantidadAcumulada : Decimal
+  }
+  class Obra <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -nombre : String
+  -direccion : String
+  -...
+  }
+  interface IConsultaReportes <<Interface>> {
+  +avanceFisico(obraId, fechaCorte)
+  +avanceFinanciero(obraId, fechaCorte)
+  +pendienteDeMovimiento(obraId, fechaCorte)
+  +resumenPorRubro(obraId, fechaCorte)
+  +respaldo(cifraId)
+  }
+  interface IPresupuestoRepositorio <<Interface>> {
+  +buscarVersionVigente(obraId)
+  }
+}
+
+ConsultarReportesControlador --> ConsultarReportesInteractor
+ConsultarReportesInteractor --> GenerarCurvaSServicio
+ConsultarReportesInteractor ..> ReportePresentador
+ConsultarReportesInteractor ..> IConsultaReportes
+ConsultarReportesInteractor ..> IPresupuestoRepositorio
+ConsultarReportesInteractor ..> VersionPresupuesto
+VersionPresupuesto "1" *-- "1..*" LineaPresupuesto
+LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto
+Obra "1" *-- "0..*" Periodo
+LineaPresupuesto "1" -- "0..*" LineaCertificado
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

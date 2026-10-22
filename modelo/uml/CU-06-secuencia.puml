@@ -1,0 +1,61 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-06 — Cerrar período de medición
+
+actor "Responsable Técnico" as SUP
+participant "<<Boundary>>\nCerrarPeriodoControlador" as CTRL
+participant "<<Control>>\nCerrarPeriodoInteractor" as UC
+participant "<<Interface>>\nIMedicionRepositorio" as MREP
+participant "<<Interface>>\nIReloj" as RLJ
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nPeriodo" as PER
+
+SUP -> CTRL : abrirPeriodo(obraId, periodoId)
+activate CTRL
+CTRL -> UC : obtenerEstado(periodoId)
+activate UC
+UC -> MREP : listarPorPeriodo(periodoId)
+activate MREP
+MREP --> UC : mediciones del período
+deactivate MREP
+UC --> CTRL : mediciones con su estado
+deactivate UC
+CTRL --> SUP : muestra las mediciones y señala las pendientes
+deactivate CTRL
+SUP -> CTRL : cerrarPeriodo(periodoId)
+activate CTRL
+CTRL -> UC : ejecutar(periodoId, actorId)
+activate UC
+UC -> MREP : buscarPeriodo(periodoId)
+activate MREP
+MREP --> UC : Periodo Abierto con sus mediciones
+deactivate MREP
+UC -> PER : puedeCerrarse()
+activate PER
+PER --> UC : verdadero | mediciones sin aprobar
+deactivate PER
+alt todas las mediciones están aprobadas (RF-11)
+  UC -> RLJ : ahora()
+  activate RLJ
+  RLJ --> UC : fecha
+  deactivate RLJ
+  UC -> PER : cerrar(actorId, fecha)
+  activate PER
+  UC -> MREP : guardarPeriodo(periodo)
+  activate MREP
+  UC -> AUD : registrar(actor, fecha, obra, período, cierre)
+  activate AUD
+  deactivate AUD
+  deactivate MREP
+  deactivate PER
+  UC --> CTRL : periodoCerrado(periodoId)
+  deactivate UC
+else quedan mediciones sin aprobar
+  UC --> CTRL : medicionesPendientes(lista)
+end
+CTRL --> SUP : informa el resultado del cierre
+deactivate CTRL
+@enduml

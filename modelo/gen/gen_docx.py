@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """modelo.yaml + modelo/out/*.png -> TPF-Obra-Studio.docx
-Reproduce exactamente la estructura de la plantilla de la cátedra."""
+Reproduce la estructura de la plantilla de la cátedra; qué diagrama va en cada sección y su
+número de figura los fija gen/plan.py."""
 import pathlib, struct, yaml
 from docx import Document
 from docx.enum.section import WD_ORIENT, WD_SECTION
@@ -12,8 +13,10 @@ from docx.shared import Cm, Pt
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 PROY = RAIZ.parent
 from modelo import cargar
+import plan
 M = cargar()
 OUT = RAIZ / "out"
+NUM = plan.numeros(M)
 
 meta     = M["meta"]
 actores  = {a["id"]: a for a in M["actores"]}
@@ -113,10 +116,11 @@ def h(nivel, texto, bruto=False):
     if not bruto: ir_vertical()
     return doc.add_heading(texto, level=nivel)
 
-def imagen(nombre, pie, titulo=None, intro=None):
-    """Coloca el diagrama; los muy apaisados van en una página horizontal.
-    El título y la introducción acompañan al diagrama para no dejar páginas casi vacías."""
-    ruta = OUT / nombre
+def imagen(f, titulo=None, intro=None):
+    """Coloca la figura f del plan con su número; los diagramas muy apaisados van en una página
+    horizontal. El título y la introducción acompañan al diagrama para no dejar páginas casi vacías."""
+    ruta = OUT / f["carpeta"] / f'{f["archivo"]}.png'
+    pie = f'Figura {NUM[f["archivo"]]}. {f["pie"]}'
     pw, ph = png_dim(ruta)
     ratio = pw / ph
     # a 16 cm un diagrama grande queda ilegible: va a página horizontal
@@ -181,18 +185,17 @@ poner_cabecera(sec, primera_distinta=True); numero_de_pagina(sec)
 
 # -------------------------------------------------------------------- contenido
 par("Contenido", align=WD_ALIGN_PARAGRAPH.CENTER, tam=14, bold=True, space=12)
-indice = [(0, "Modelo de Análisis"), (1, "Requerimientos"),
-          (2, "Requerimientos Funcionales"), (2, "Requerimientos No Funcionales"),
-          (1, "Identificación de Actores"), (1, "Diagrama de Casos de Uso")]
-for sid, s in sorted(M["subsistemas"].items()):
-    indice.append((2, f'Sistema {meta["sistema"]} — Subsistema {s["nombre"]}'))
-for c in detallados:
+indice = [(0, "Modelo de Análisis"), (1, "Identificación de Actores"), (1, "Requerimientos"),
+          (2, "Requerimientos Funcionales"), (2, "Requerimientos No Funcionales")]
+for titulo, figs in plan.globales(M):
+    indice.append((1, titulo))
+    indice += [(2, f["titulo"]) for f in figs if f["titulo"]]
+for c in M["casos_uso"]:
     indice.append((1, f'Caso de Uso {c["id"]} {c["nombre"]}'))
-    indice += [(2, "Especificación Caso de Uso"), (2, "Diagrama de Clases del Caso de Uso"),
-               (2, "Diagrama de Interacción del Caso de Uso")]
-indice += [(1, "Matriz de Requerimientos vs Casos de Uso"), (0, "Modelo de Diseño"),
-           (1, "Diagrama de Clases Persistentes"), (1, "Diagrama de Entidad Relación"),
-           (0, "Referencias")]
+    indice += [(2, sub) for sub, _, _ in plan.por_caso(M, c)]
+indice += [(1, "Matriz de Requerimientos vs Casos de Uso"), (0, "Modelo de Diseño")]
+indice += [(1, titulo) for titulo, _ in plan.diseno(M)]
+indice += [(0, "Referencias")]
 for nivel, texto in indice:
     p = par(texto, tam=11, bold=(nivel == 0), space=2)
     p.paragraph_format.left_indent = Cm(0.8 * nivel)
@@ -208,6 +211,11 @@ par(f'Este modelo describe el análisis de {meta["sistema"]}, sistema de gestió
     f'(adaptadores de interfaz), «Control» (casos de uso) y «Entity» (dominio), y los puertos aparecen '
     f'como «Interface» realizados por la infraestructura.')
 
+h(2, "Identificación de Actores")
+filas = [["Actor", "Descripción"]]
+filas += [[a["nombre"], " ".join(a["descripcion"].split())] for a in M["actores"]]
+tabla(filas, anchos=[Cm(4.0), Cm(12.0)], encabezado=True)
+
 h(2, "Requerimientos")
 
 h(3, "Requerimientos Funcionales")
@@ -221,17 +229,26 @@ filas += [[r["id"], " ".join(r["enunciado"].split())] for r in reqs if r["tipo"]
 tabla(filas, anchos=[Cm(1.8), Cm(14.2)], encabezado=True)
 par("Los identificadores PR corresponden a restricciones de plataforma y alcance.", tam=9)
 
-h(2, "Identificación de Actores")
-filas = [["Actor", "Descripción"]]
-filas += [[a["nombre"], " ".join(a["descripcion"].split())] for a in M["actores"]]
-tabla(filas, anchos=[Cm(4.0), Cm(12.0)], encabezado=True)
-
-h(2, "Diagrama de Casos de Uso")
-for i, (sid, s) in enumerate(sorted(M["subsistemas"].items()), start=1):
-    imagen(f'0{i}-casos-de-uso-{sid}.png',
-           f'Figura {i}. Casos de uso del subsistema {s["nombre"]}.',
-           titulo=(3, f'Sistema {meta["sistema"]} — Subsistema {s["nombre"]}'),
-           intro=s["descripcion"])
+# ------------------------------------------- diagramas previos a los casos de uso
+INTRO_GLOBAL = {
+    "Diagrama de Casos de Uso (Alto Nivel)":
+        "Los casos de uso se agrupan por procesos: cada subsistema es un caso de uso de alto nivel "
+        "y cada actor se une a los subsistemas en los que participa. Los actores primarios inician "
+        "los casos; los secundarios y los motores reciben su resultado.",
+    "Diagrama de Generalización de Actores":
+        "Los actores abstractos no tienen casos de uso propios, porque un actor hijo hereda todos los "
+        "casos del padre; agrupan lo que sus hijos tienen en común. " + " ".join(
+            f'{g["nombre"]}: {" ".join(g["descripcion"].split())}'
+            for g in M.get("generalizacion_actores", [])),
+    "Diagramas de Casos de Uso":
+        "Diagramas refinados, uno por subsistema, con los actores, sus asociaciones y las relaciones "
+        "include y extend entre casos de uso.",
+}
+for titulo, figs in plan.globales(M):
+    h(2, titulo)
+    par(INTRO_GLOBAL[titulo])
+    for f in figs:
+        imagen(f, titulo=(3, f["titulo"]) if f["titulo"] else None, intro=f["intro"])
 
 # ------------------------------------------------------- especificación de un CU
 def spec_tabla(c):
@@ -279,19 +296,54 @@ def spec_tabla(c):
     fila(["Excepciones", "\n".join(map(item, c["excepciones"]))], combinar=(1, 3))
     return t
 
-fig = len(M["subsistemas"])
-for c in detallados:
+def ficha_base(c):
+    """Caso de uso no detallado: solo los datos del catálogo; el resto queda marcado."""
+    reqs_cu = [r["id"] for r in reqs if c["id"] in (r.get("casos_uso") or [])]
+    tabla([["Nombre Caso de Uso", f'{c["id"]} {c["nombre"]}'],
+           ["Actores", ", ".join(actores[a]["nombre"] for a in c["actores"])],
+           ["Requerimiento(s) a que Responde", ", ".join(reqs_cu)],
+           ["Pendiente", "Descripción, precondiciones, poscondiciones, flujo normal, flujo "
+                         "alternativo y excepciones."]], anchos=[Cm(4.0), Cm(12.0)])
+
+INTRO_CU = {
+    "Descripción": f"El contexto C4 muestra quién usa el caso de uso y con qué sistemas interactúa; "
+                   f"los contenedores C4, qué partes de {meta['sistema']} intervienen. Sigue la especificación.",
+    "Modelo Estructural": "Clases que participan para resolver el caso de uso, por capa: «Boundary» "
+                          "(adaptadores de interfaz), «Control» (casos de uso) y «Entity» (dominio), con los "
+                          "puertos «Interface» que declara el dominio.",
+    "Modelo Dinámico": "Interacción entre objetos de las clases anteriores para lograr el objetivo del caso "
+                       "de uso, y la misma colaboración vista entre componentes C4.",
+    "Otros diagramas": "Diagramas que completan la explicación del caso de uso sin repetir los anteriores.",
+}
+SIN_FIGURA = {
+    "Descripción": "",
+    "Modelo Estructural": "Pendiente: el caso de uso no está detallado; falta su entrada en clases_cu de modelo.yaml.",
+    "Modelo Dinámico": "Pendiente: el caso de uso no está detallado; falta su entrada en secuencias de modelo.yaml.",
+    "Otros diagramas": "No requiere diagramas adicionales: el flujo no se ramifica y el caso de uso no cambia "
+                       "el estado de ninguna entidad.",
+}
+
+def referencia(ent, dueno, eventos):
+    lista = ", ".join(f"«{e}»" for e in eventos)
+    return (f"Estados de {ent}: este caso de uso dispara {lista}. Para no repetir la figura, la máquina "
+            f"de estados completa se presenta en {dueno} (Figura {NUM[plan.estado(ent)]}).")
+
+for c in M["casos_uso"]:
     h(2, f'Caso de Uso {c["id"]} {c["nombre"]}')
-    h(3, "Especificación Caso de Uso")
-    spec_tabla(c)
-    fig += 1
-    n = {"CU-02": "03", "CU-05": "04", "CU-09": "05"}[c["id"]]
-    imagen(f'{n}-{c["id"]}-clases.png', f'Figura {fig}. Clases del caso de uso {c["id"]}.',
-           titulo=(3, "Diagrama de Clases del Caso de Uso"))
-    fig += 1
-    n = {"CU-02": "06", "CU-05": "07", "CU-09": "08"}[c["id"]]
-    imagen(f'{n}-{c["id"]}-secuencia.png', f'Figura {fig}. Interacción del caso de uso {c["id"]}.',
-           titulo=(3, "Diagrama de Interacción del Caso de Uso"))
+    for sub, figs, refs in plan.por_caso(M, c):
+        if figs:
+            imagen(figs[0], titulo=(3, sub), intro=INTRO_CU[sub])
+            for f in figs[1:]:
+                imagen(f)
+        else:
+            h(3, sub)
+            if SIN_FIGURA[sub] and not refs:
+                par(SIN_FIGURA[sub])
+        for r in refs:
+            par(referencia(*r))
+        if sub == "Descripción":
+            ir_vertical()
+            spec_tabla(c) if c.get("detallado") else ficha_base(c)
 
 # ------------------------------------------------ matriz requerimientos vs CU
 ir_horizontal()
@@ -327,29 +379,29 @@ par(bruto=True, texto=f'Los {len(reqs)} identificadores del catálogo quedan cub
 # ============================================================= MODELO DE DISEÑO
 h(1, "Modelo de Diseño")
 
-h(2, "Diagrama de Clases Persistentes")
 derivados = [f'{e["nombre"]}.{a["n"]}' for e in M["entidades"]
              for a in e["atributos"] if a.get("derivado")]
-par(f'Las clases persistentes son {sum(1 for e in M["entidades"] if e.get("tabla"))}, agrupadas en '
+tablas_n = sum(1 for e in M["entidades"] if e.get("tabla"))
+INTRO_DISENO = {
+"Diagrama de Clases Persistentes":
+    f'Las clases persistentes son {tablas_n}, agrupadas en '
     f'paquetes y repartidas en dos figuras complementarias para que resulten legibles. Los '
     f'{len(derivados)} atributos marcados con una barra inclinada son derivados: se calculan a '
     f'partir de los registros aprobados y no se almacenan, de modo que no puedan discrepar de su '
     f'origen. Los puntos suspensivos indican atributos elididos; el detalle completo de columnas y '
     f'tipos figura en el diagrama de entidad relación. Valorizacion es un objeto de valor y no '
-    f'persiste por sí mismo.')
-for num, sid, nombre in [("09", "A", "obra y presupuesto"), ("10", "B", "medición y certificación")]:
-    fig += 1
-    imagen(f'{num}-clases-persistentes-{sid}.png',
-           f'Figura {fig}. Clases persistentes ({sid}): {nombre}.')
-
-h(2, "Diagrama de Entidad Relación")
-tablas_n = sum(1 for e in M["entidades"] if e.get("tabla"))
-par(f'El modelo relacional comprende {tablas_n} tablas y {len(M["relaciones"])} relaciones, en '
+    f'persiste por sí mismo.',
+"Diagrama de Entidad Relación":
+    f'El modelo relacional comprende {tablas_n} tablas y {len(M["relaciones"])} relaciones, en '
     f'notación de pata de gallo. El símbolo ● identifica una columna obligatoria; «PK» y «FK» '
     f'señalan la clave primaria y las claves foráneas. Los atributos derivados del diagrama anterior '
-    f'no aparecen como columnas.')
-fig += 1
-imagen("11-entidad-relacion.png", f"Figura {fig}. Diagrama de entidad relación.")
+    f'no aparecen como columnas.',
+}
+for titulo, figs in plan.diseno(M):
+    h(2, titulo)
+    par(INTRO_DISENO[titulo])
+    for f in figs:
+        imagen(f)
 
 # ================================================================= REFERENCIAS
 h(1, "Referencias")
@@ -365,4 +417,4 @@ destino = PROY / "TPF-Obra-Studio.docx"
 doc.save(str(destino))
 print(f"Documento generado: {destino}")
 print(f"  {len(reqs)} requisitos · {len(M['casos_uso'])} casos de uso · "
-      f"{len(detallados)} especificados · {fig} figuras")
+      f"{len(detallados)} especificados · {len(NUM)} figuras")

@@ -5,8 +5,8 @@ title CU-09 — Emitir certificado de avance
 
 Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
 Component(EmitirCertificadoControlador, "EmitirCertificadoControlador", "Controller / Presenter")
-Component(EmitirCertificadoInteractor, "EmitirCertificadoInteractor", "Interactor")
 Component(CalcularValorizacionServicio, "CalcularValorizacionServicio", "Interactor")
+Component(EmitirCertificadoInteractor, "EmitirCertificadoInteractor", "Interactor")
 Component(Certificado, "Certificado", "Entidad de dominio")
 Component(ICertificadoRepositorio, "ICertificadoRepositorio", "Interfaz")
 Component(IGeneradorDocumento, "IGeneradorDocumento", "Interfaz")

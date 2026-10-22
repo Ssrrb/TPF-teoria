@@ -1,0 +1,93 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-03 — Confirmar estructura y activar versión vigente
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class ActivarVersionControlador <<Boundary>> {
+    +abrirVersion(versionId)
+    +activarVersion(versionId)
+    +descartarVersion(versionId)
+  }
+  class VersionPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class ActivarVersionInteractor <<Control>> {
+    +obtenerVersion(versionId)
+    +activar(versionId, actorId)
+    +descartar(versionId, actorId)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class VersionPresupuesto <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -estado : String
+  -fechaActivacion : DateTime
+  -/montoContractual : Decimal
+    --
+    +confirmarEstructura()
+    +activar(fecha)
+    +reemplazar()
+    +descartar()
+  }
+  class Presupuesto <<Entity>> {
+  +id : UUID
+  -tipo : String
+  -moneda : String
+  }
+  class LineaPresupuesto <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -tipo : String
+  -/importe : Decimal
+  -/cantidadMedida : Decimal
+  -/saldo : Decimal
+  -...
+  }
+  class InformeImportacion <<Entity>> {
+  +id : UUID
+  -totalDeclarado : Decimal
+  -totalRecalculado : Decimal
+  -tolerancia : Decimal
+  -/diferencia : Decimal
+  -...
+  }
+  interface IPresupuestoRepositorio <<Interface>> {
+  +buscarVersionVigente(obraId)
+  +buscarVersion(versionId)
+  +guardarVersion(version)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+  interface IReloj <<Interface>> {
+  +ahora()
+  }
+}
+
+ActivarVersionControlador --> ActivarVersionInteractor
+ActivarVersionInteractor ..> VersionPresentador
+ActivarVersionInteractor ..> IPresupuestoRepositorio
+ActivarVersionInteractor ..> IAuditoriaRepositorio
+ActivarVersionInteractor ..> IReloj
+ActivarVersionInteractor ..> VersionPresupuesto
+Presupuesto "1" *-- "1..*" VersionPresupuesto
+VersionPresupuesto "1" *-- "1..*" LineaPresupuesto
+LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto
+VersionPresupuesto "1" *-- "0..1" InformeImportacion
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

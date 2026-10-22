@@ -4,6 +4,7 @@ import pathlib, yaml
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 from modelo import cargar
+import plan
 M = cargar()
 C4 = RAIZ / "c4"; C4.mkdir(exist_ok=True)
 SIS = M["meta"]["sistema"]
@@ -93,6 +94,13 @@ for n in capas["puertos"]:
     if a not in capas["adapter"]:
         capas["adapter"].append(a)
 
+def elemento(p):
+    """Participante de secuencia -> elemento C4. Una persona entra por la aplicación web; un actor
+    sistema (motor que actúa sin usuario, D-15) es un elemento propio."""
+    if p["tipo"] != "actor":
+        return vid(p["nombre"])
+    return f'act_{p["id"].lower()}' if actores[p["id"]]["tipo"] == "sistema" else "web"
+
 def relaciones_componentes(solo_cu=None):
     """Pares (origen, destino, mensaje) derivados de las secuencias; únicos para la vista estática."""
     pares, vistos = [], set()
@@ -104,12 +112,13 @@ def relaciones_componentes(solo_cu=None):
             if "frag" in m or m.get("tipo") == "return":
                 continue
             o, d = porid[m["de"]], porid[m["a"]]
-            od = "web" if o["tipo"] == "actor" else vid(o["nombre"])
-            dd = "web" if d["tipo"] == "actor" else vid(d["nombre"])
+            od, dd = elemento(o), elemento(d)
             if od == dd or (solo_cu is None and (od, dd) in vistos):
                 continue
             vistos.add((od, dd)); pares.append((od, dd, m["msg"]))
     return pares
+
+FILA = 8
 
 def gen_componentes():
     L = cabecera("C4_Component", "Componentes — capas de Clean Architecture en el Motor ECMS")
@@ -125,12 +134,20 @@ def gen_componentes():
         L.append("  }")
     L.append("}")
     L.append("")
-    comp = {vid(n) for k in capas for n in capas[k]} | {"web"}
-    for od, dd, msg in relaciones_componentes():
-        if od in comp and dd in comp:
-            L.append(f'Rel({od}, {dd}, "{q(msg)}")')
+    # Con los 16 casos de uso, los mensajes de todas las secuencias vuelven ilegible la vista: la
+    # colaboración de cada caso está en su vista dinámica (C4-CUxx). Aquí quedan los anillos y la
+    # realización de cada puerto por su adaptador.
     for n in capas["puertos"]:
         L.append(f'Rel({vid(puertos[n]["adaptador"])}, {vid(n)}, "Implementa")')
+    # enlaces invisibles: cada capa en filas de FILA componentes y las capas una debajo de otra,
+    # porque en una sola fila superan el ancho que PlantUML admite
+    for capa in capas:
+        ns = [vid(n) for n in capas[capa]]
+        for i in range(FILA, len(ns)):
+            L.append(f"Lay_D({ns[i - FILA]}, {ns[i]})")
+    orden = [k for k in ("boundary", "control", "entity", "puertos", "adapter") if capas[k]]
+    for a, b in zip(orden, orden[1:]):
+        L.append(f"Lay_D({vid(capas[a][-1])}, {vid(capas[b][0])})")
     L += ['Rel(web, ecms, "Invoca los casos de uso", "HTTPS/JSON")' if False else "",
           "@enduml"]
     escribir("C4-Componentes.puml", [x for x in L if x != ""] )
@@ -143,7 +160,11 @@ def gen_dinamicas():
         pasos = relaciones_componentes(cid)
         usados = {x for p in pasos for x in p[:2]}
         L = cabecera("C4_Dynamic", f"{cid} — {c['nombre']}")
-        L.append('Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")')
+        if "web" in usados:
+            L.append('Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")')
+        for a in c["actores"]:
+            if f"act_{a.lower()}" in usados:
+                L.append(f'Container(act_{a.lower()}, "{actores[a]["nombre"]}", "Motor de {SIS}", "{q(corta(actores[a]))}")')
         for capa, (titulo, tec) in GRUPO.items():
             for n in capas[capa]:
                 if vid(n) in usados:
@@ -152,13 +173,13 @@ def gen_dinamicas():
         for i, (od, dd, msg) in enumerate(pasos, 1):
             L.append(f'Rel({od}, {dd}, "{i}. {q(msg)}")')
         L.append("@enduml")
-        escribir(f"C4-{cid.replace('-', '')}.puml", L)
+        escribir(f"{plan.c4_dinamica(cid)}.puml", L)
 
 # ------------------------------------------------- introducción por caso de uso
 CONTENEDOR = {"bd": 'ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")',
               "archivos": 'ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas, evidencias y certificados exportados.")'}
 ROL = {"bd": ("Lee y escribe", "SQL"), "archivos": ("Conserva archivos", "API de objetos"),
-       "erp": ("Publica el certificado emitido", "Evento de dominio")}
+       "erp": ("Publica eventos de dominio", "Evento de dominio")}
 
 def _actores_cu(c):
     return [actores[a] for a in c["actores"]]
@@ -167,7 +188,6 @@ def gen_intro_cu():
     """Dos vistas que abren la ficha de cada caso de uso: contexto (todos) y contenedores
     (solo los detallados, donde el modelo sabe qué adaptadores usa el caso)."""
     for cid, c in casos.items():
-        n = cid.replace("-", "")
         acts = _actores_cu(c)
         humanos = [a for a in acts if a["tipo"] != "sistema"]
         externos = [a for a in acts if a["tipo"] == "sistema" and a["id"] != "ECMS"]
@@ -183,7 +203,7 @@ def gen_intro_cu():
         for a in externos:
             L.append(f'Rel(obra, {a["id"]}, "Entrega el resultado del caso de uso")')
         L.append("@enduml")
-        escribir(f"C4-{n}-contexto.puml", L)
+        escribir(f"{plan.c4_contexto(cid)}.puml", L)
 
         if cid not in M["clases_cu"]:
             continue
@@ -209,7 +229,7 @@ def gen_intro_cu():
             if k in usa:
                 L.append(f'Rel(ecms, {k}, "{ROL[k][0]}", "{ROL[k][1]}")')
         L.append("@enduml")
-        escribir(f"C4-{n}-contenedores.puml", L)
+        escribir(f"{plan.c4_contenedores(cid)}.puml", L)
 
 if __name__ == "__main__":
     print("Generando vistas C4-PlantUML desde modelo.yaml:")

@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title CU-10 — Derivar documento financiero en ERP: contenedores
+
+Person(TES, "Finanzas y Tesorería", "Opera dentro del ERP.")
+Person(CLI, "Cliente", "Comitente de la obra.")
+System_Boundary(obra, "Obra Studio") {
+  Container(web, "Aplicación Web", "React + TypeScript", "Formularios del caso de uso.")
+  Container(ecms, "Motor ECMS", "TypeScript", "Reglas del caso de uso.")
+  ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")
+}
+System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")
+
+Rel(TES, web, "Derivar documento financiero en ERP", "HTTPS")
+Rel(CLI, web, "Derivar documento financiero en ERP", "HTTPS")
+Rel(web, ecms, "Invoca el caso de uso", "HTTPS/JSON")
+Rel(ecms, bd, "Lee y escribe", "SQL")
+Rel(ecms, erp, "Publica eventos de dominio", "Evento de dominio")
+@enduml

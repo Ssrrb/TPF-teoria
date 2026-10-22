@@ -1,0 +1,22 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Estados de VersionPresupuesto
+
+state "Propuesta" as Propuesta
+Propuesta : Importada y registrada; espera la confirmación de estructura y la activación.
+state "Vigente" as Vigente
+Vigente : Rige para medición, certificación y control de saldo.
+state "Reemplazada" as Reemplazada
+Reemplazada : Un movimiento aprobado generó una versión posterior; permanece consultable.
+state "Descartada" as Descartada
+Descartada : El Administrador no confirmó su estructura; no llegó a regir.
+
+[*] --> Propuesta : (CU-02, CU-11)
+Propuesta --> Vigente : confirmar estructura y activar [estructura confirmada]\n(CU-03, CU-11)
+Propuesta --> Descartada : descartar\n(CU-03)
+Vigente --> Reemplazada : activar versión posterior\n(CU-03, CU-11)
+Reemplazada --> [*]
+Descartada --> [*]
+@enduml

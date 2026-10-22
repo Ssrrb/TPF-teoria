@@ -1,0 +1,23 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-13 — Consultar estado del subcontrato
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(ConsultarSubcontratoControlador, "ConsultarSubcontratoControlador", "Controller / Presenter")
+Component(ConsultarSubcontratoInteractor, "ConsultarSubcontratoInteractor", "Interactor")
+Component(Subcontrato, "Subcontrato", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IMedicionRepositorio, "IMedicionRepositorio", "Interfaz")
+Component(ICertificadoRepositorio, "ICertificadoRepositorio", "Interfaz")
+Component(ISubcontratoRepositorio, "ISubcontratoRepositorio", "Interfaz")
+
+Rel(web, ConsultarSubcontratoControlador, "1. consultarContrato(subcontratoId)")
+Rel(ConsultarSubcontratoControlador, ConsultarSubcontratoInteractor, "2. ejecutar(subcontratoId, actorId)")
+Rel(ConsultarSubcontratoInteractor, ISubcontratoRepositorio, "3. buscar(subcontratoId)")
+Rel(ConsultarSubcontratoInteractor, Subcontrato, "4. perteneceA(socioId)")
+Rel(ConsultarSubcontratoInteractor, IMedicionRepositorio, "5. listarPorSubcontrato(subcontratoId)")
+Rel(ConsultarSubcontratoInteractor, ICertificadoRepositorio, "6. listarPorSubcontrato(subcontratoId)")
+Rel(ConsultarSubcontratoInteractor, Subcontrato, "7. saldoCertificable()")
+Rel(ConsultarSubcontratoInteractor, IAuditoriaRepositorio, "8. registrar(actor, fecha, obra, subcontrato, acceso denegado)")
+@enduml

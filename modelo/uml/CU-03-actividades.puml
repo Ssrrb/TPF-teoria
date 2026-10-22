@@ -1,0 +1,32 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-03 — Confirmar estructura y activar versión vigente: actividades
+
+|Administrador|
+start
+|Administrador|
+:Selecciona la obra y abre la versión en estado\nPropuesta.;
+|Obra Studio|
+:Presenta rubros, subrubros e ítems con sus\nunidades y agrupaciones, junto con el informe\nde importación.;
+if (A1. ¿La estructura no se confirma?) then (sí)
+  :El actor descarta la versión; el sistema la\ndeja Descartada y la versión vigente no\ncambia.;
+  stop
+else (no)
+endif
+|Administrador|
+:Revisa y confirma rubros, unidades y\nagrupaciones.;
+|Obra Studio|
+:Registra la confirmación de la estructura de\nla versión.;
+|Administrador|
+:Solicita activar la versión.;
+|Obra Studio|
+:Deja la versión Vigente con su fecha de\nactivación y pasa a Reemplazada la versión\nvigente anterior, en una sola operación.;
+note right
+  En cualquier paso:
+  E1 (RNF-01). El actor no tiene rol admin vigente sobre la obra
+  E2. Operación interrumpida
+end note
+stop
+@enduml

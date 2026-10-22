@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title CU-03 — Confirmar estructura y activar versión vigente: contenedores
+
+Person(ADM, "Administrador", "Gerente de la obra.")
+System_Boundary(obra, "Obra Studio") {
+  Container(web, "Aplicación Web", "React + TypeScript", "Formularios del caso de uso.")
+  Container(ecms, "Motor ECMS", "TypeScript", "Reglas del caso de uso.")
+  ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")
+}
+
+Rel(ADM, web, "Confirmar estructura y activar versión vigente", "HTTPS")
+Rel(web, ecms, "Invoca el caso de uso", "HTTPS/JSON")
+Rel(ecms, bd, "Lee y escribe", "SQL")
+@enduml

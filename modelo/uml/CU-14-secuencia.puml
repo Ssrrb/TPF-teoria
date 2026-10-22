@@ -1,0 +1,71 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-14 — Certificar y valorizar subcontrato
+
+actor "Responsable Técnico" as SUP
+participant "<<Boundary>>\nCertificarSubcontratoControlador" as CTRL
+participant "<<Control>>\nCertificarSubcontratoInteractor" as UC
+participant "<<Control>>\nCalcularValorizacionServicio" as VLZ
+participant "<<Interface>>\nISubcontratoRepositorio" as SREP
+participant "<<Interface>>\nIMedicionRepositorio" as MREP
+participant "<<Interface>>\nICertificadoRepositorio" as CREP
+participant "<<Interface>>\nIPublicadorEventos" as EVT
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nCertificado" as CER
+actor "Subcontratista" as SUB
+
+SUP -> CTRL : certificarSubcontrato(subcontratoId, periodoId)
+activate CTRL
+CTRL -> UC : ejecutar(subcontratoId, periodoId, actorId)
+activate UC
+UC -> SREP : buscar(subcontratoId)
+activate SREP
+SREP --> UC : Subcontrato con precios y retenciones del contrato
+deactivate SREP
+UC -> MREP : listarPorSubcontrato(subcontratoId)
+activate MREP
+MREP --> UC : mediciones aprobadas no certificadas (RF-10)
+deactivate MREP
+UC -> CER ** : crear(tipo = subcontrato, estado = Borrador)
+UC -> VLZ : calcular(lineas, preciosContrato)
+activate VLZ
+VLZ --> UC : Valorizacion contractual
+deactivate VLZ
+UC --> CTRL : valorización separada del costo y del precio de venta
+deactivate UC
+CTRL --> SUP : muestra la valorización del subcontrato
+deactivate CTRL
+SUP -> CTRL : emitirCertificado(certificadoId)
+activate CTRL
+CTRL -> UC : emitir(certificadoId, actorId)
+activate UC
+UC -> CREP : siguienteNumero(obraId)
+activate CREP
+CREP --> UC : numero
+deactivate CREP
+UC -> CER : emitir(numero, fecha, destinatario, actorId)
+activate CER
+UC -> CREP : guardar(certificado)
+activate CREP
+UC -> AUD : registrar(actor, fecha, obra, certificado, emisión)
+activate AUD
+UC ->> EVT : publicar(CertificadoEmitido(certificadoId))
+deactivate AUD
+deactivate CREP
+deactivate CER
+UC --> CTRL : certificado de subcontrato emitido
+deactivate UC
+CTRL --> SUP : confirma la emisión y el envío al ERP
+deactivate CTRL
+SUB -> CTRL : verCertificado(certificadoId)
+activate CTRL
+CTRL -> UC : consultar(certificadoId, actorId)
+activate UC
+UC --> CTRL : valorización de su contrato, sin precios internos (RNF-02)
+deactivate UC
+CTRL --> SUB : muestra el certificado emitido de su contrato
+deactivate CTRL
+@enduml

@@ -1,0 +1,52 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-13 — Consultar estado del subcontrato
+
+actor "Subcontratista" as SUB
+participant "<<Boundary>>\nConsultarSubcontratoControlador" as CTRL
+participant "<<Control>>\nConsultarSubcontratoInteractor" as UC
+participant "<<Interface>>\nISubcontratoRepositorio" as SREP
+participant "<<Interface>>\nIMedicionRepositorio" as MREP
+participant "<<Interface>>\nICertificadoRepositorio" as CREP
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nSubcontrato" as SBC
+
+SUB -> CTRL : consultarContrato(subcontratoId)
+activate CTRL
+CTRL -> UC : ejecutar(subcontratoId, actorId)
+activate UC
+UC -> SREP : buscar(subcontratoId)
+activate SREP
+SREP --> UC : Subcontrato
+deactivate SREP
+UC -> SBC : perteneceA(socioId)
+activate SBC
+SBC --> UC : verdadero | falso
+deactivate SBC
+alt el contrato es del socio del actor (RNF-02)
+  UC -> MREP : listarPorSubcontrato(subcontratoId)
+  activate MREP
+  MREP --> UC : mediciones con ejecutor subcontratado
+  deactivate MREP
+  UC -> CREP : listarPorSubcontrato(subcontratoId)
+  activate CREP
+  CREP --> UC : certificados de subcontrato con su Valorizacion
+  deactivate CREP
+  UC -> SBC : saldoCertificable()
+  activate SBC
+  SBC --> UC : monto certificado y saldo
+  deactivate SBC
+  UC --> CTRL : estado del contrato
+  deactivate UC
+else contrato ajeno
+  UC -> AUD : registrar(actor, fecha, obra, subcontrato, acceso denegado)
+  activate AUD
+  UC --> CTRL : accesoDenegado()
+  deactivate AUD
+end
+CTRL --> SUB : muestra solo los datos de su contrato
+deactivate CTRL
+@enduml

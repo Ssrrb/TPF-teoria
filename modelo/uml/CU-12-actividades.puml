@@ -1,0 +1,31 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-12 — Registrar contrato de subcontrato: actividades
+
+|Administrador|
+start
+|Administrador|
+:Selecciona la obra y solicita registrar un\nsubcontrato.;
+|Obra Studio|
+:Presenta los socios de la organización y los\nrubros e ítems de la versión vigente.;
+|Administrador|
+:Elige el socio e indica número, monto,\nmodalidad, rubros alcanzados, precios,\nlímites, impuestos y retenciones.;
+|Obra Studio|
+:Comprueba que los rubros pertenezcan a la\nversión vigente y que el número no esté\nregistrado en la obra.;
+if (E1. ¿Rubro ajeno a la versión vigente o\nnúmero repetido?) then (sí)
+  :El sistema no registra el subcontrato e indica\nel dato a corregir.;
+  end
+else (no)
+endif
+|Administrador|
+:Confirma el registro.;
+|Obra Studio|
+:Registra el subcontrato vinculado a su alcance\ntécnico y publica el evento para que el ERP\nregistre el contrato legal.;
+note right
+  En cualquier paso:
+  E2 (RNF-01). El actor no tiene rol admin vigente sobre la obra
+end note
+stop
+@enduml

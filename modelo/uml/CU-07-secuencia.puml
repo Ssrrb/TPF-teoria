@@ -1,0 +1,63 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-07 — Generar borrador de certificado
+
+actor "Ingeniero de Obra" as ING
+participant "<<Boundary>>\nGenerarBorradorControlador" as CTRL
+participant "<<Control>>\nGenerarBorradorInteractor" as UC
+participant "<<Control>>\nCalcularValorizacionServicio" as VLZ
+participant "<<Control>>\nDetectarAlertasServicio" as ALE
+participant "<<Interface>>\nIMedicionRepositorio" as MREP
+participant "<<Interface>>\nIPresupuestoRepositorio" as PREP
+participant "<<Interface>>\nICertificadoRepositorio" as CREP
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nCertificado" as CER
+
+ING -> CTRL : generarBorrador(obraId, periodoId)
+activate CTRL
+CTRL -> UC : ejecutar(periodoId, actorId)
+activate UC
+UC -> MREP : listarPorPeriodo(periodoId)
+activate MREP
+MREP --> UC : mediciones aprobadas con cantidad certificable
+deactivate MREP
+UC -> PREP : buscarVersionVigente(obraId)
+activate PREP
+PREP --> UC : VersionPresupuesto vigente
+deactivate PREP
+alt no hay mediciones elegibles (RF-12)
+  UC --> CTRL : sinMedicionesElegibles(periodoId)
+  deactivate UC
+else hay mediciones aprobadas con saldo
+  UC -> CER ** : crear(tipo = interno, estado = Borrador, revisión 1)
+  loop por cada ítem con cantidad certificable
+    UC -> MREP : acumuladoAprobado(lineaId)
+    activate MREP
+    MREP --> UC : cantidadAcumulada
+    deactivate MREP
+    UC -> CER : agregarLinea(cantidadPeriodo, precioUnitario, medicionId)
+    activate CER
+    deactivate CER
+  end
+  UC -> VLZ : calcular(lineas, configuracionObra)
+  activate VLZ
+  VLZ --> UC : Valorizacion(subtotal, impuestos, retenciones, total)
+  deactivate VLZ
+  UC -> ALE : detectar(lineas, versionVigente)
+  activate ALE
+  ALE --> UC : alertas con rubro o ítem y dato de origen
+  deactivate ALE
+  UC -> CREP : guardar(certificado)
+  activate CREP
+  UC -> AUD : registrar(actor, fecha, obra, version, borrador)
+  activate AUD
+  UC --> CTRL : borrador con valorización y alertas
+  deactivate AUD
+  deactivate CREP
+end
+CTRL --> ING : muestra el borrador, la valorización y las alertas
+deactivate CTRL
+@enduml

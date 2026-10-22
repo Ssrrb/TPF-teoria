@@ -1,0 +1,77 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-10 — Derivar documento financiero en ERP
+
+actor "Motor de Ingeniería" as ECMS
+actor "Finanzas y Tesorería" as TES
+participant "<<Boundary>>\nDocumentoFinancieroControlador" as CTRL
+participant "<<Control>>\nDerivarDocumentoInteractor" as UC
+participant "<<Interface>>\nIDocumentoFinancieroRepositorio" as DREP
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nDocumentoFinancieroERP" as DOC
+actor "Cliente" as CLI
+
+ECMS ->> CTRL : certificadoEmitido(certificadoId, tipo, monto)
+CTRL -> UC : derivar(certificadoId, tipo, monto)
+activate UC
+UC -> DREP : buscarPorCertificado(certificadoId)
+activate DREP
+DREP --> UC : documento vinculado | nulo
+deactivate DREP
+alt el certificado ya tiene documento (RF-14)
+  UC --> CTRL : refiereDocumentoExistente(documentoId)
+  deactivate UC
+else certificado sin documento
+  UC -> DOC ** : crear(tipo, numero, fecha, monto, estado = Registrado)
+  UC -> DREP : guardar(documento)
+  activate DREP
+  UC -> AUD : registrar(actor, fecha, obra, certificado, documento)
+  activate AUD
+  UC --> CTRL : documentoRegistrado(documentoId)
+  opt certificado interno: factura al cliente
+    CTRL ->> CLI : entrega la factura del certificado
+  end
+  deactivate AUD
+  deactivate DREP
+end
+alt factura
+  TES -> CTRL : registrarCobro(documentoId)
+  activate CTRL
+  CTRL -> UC : cobrar(documentoId, actorId)
+  activate UC
+  UC -> DOC : registrarCobro(fecha)
+  activate DOC
+  deactivate DOC
+  deactivate UC
+  deactivate CTRL
+else pago al subcontratista (PR-06)
+  TES -> CTRL : aprobarPago(documentoId)
+  activate CTRL
+  CTRL -> UC : aprobarPago(documentoId, actorId)
+  activate UC
+  UC -> DOC : aprobarPago(fecha)
+  activate DOC
+  TES -> CTRL : ejecutarPago(documentoId)
+  activate CTRL
+  CTRL -> UC : ejecutarPago(documentoId, actorId)
+  activate UC
+  UC -> DOC : pagar(fecha)
+  activate DOC
+  deactivate DOC
+  deactivate UC
+  deactivate CTRL
+  deactivate DOC
+  deactivate UC
+  deactivate CTRL
+end
+UC -> DREP : guardar(documento)
+activate DREP
+UC -> AUD : registrar(actor, fecha, obra, documento, cobro o pago)
+activate AUD
+CTRL --> TES : confirma el estado del documento
+deactivate AUD
+deactivate DREP
+@enduml

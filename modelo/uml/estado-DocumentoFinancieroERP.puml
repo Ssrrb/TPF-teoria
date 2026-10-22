@@ -1,0 +1,22 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Estados de DocumentoFinancieroERP
+
+state "Registrado" as Registrado
+Registrado : Derivado de un certificado emitido: factura al cliente o pago al subcontratista.
+state "Cobrado" as Cobrado
+Cobrado : Finanzas y Tesorería registró el cobro de la factura.
+state "Aprobado" as Aprobado
+Aprobado : Finanzas y Tesorería aprobó el pago al subcontratista.
+state "Pagado" as Pagado
+Pagado : Finanzas y Tesorería ejecutó el pago.
+
+[*] --> Registrado : (CU-10)
+Registrado --> Cobrado : registrar cobro [tipo factura]\n(CU-10)
+Registrado --> Aprobado : aprobar pago [tipo pago]\n(CU-10)
+Aprobado --> Pagado : ejecutar pago\n(CU-10)
+Cobrado --> [*]
+Pagado --> [*]
+@enduml

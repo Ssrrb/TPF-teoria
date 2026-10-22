@@ -1,0 +1,51 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-08 — Corregir certificado emitido
+
+actor "Ingeniero de Obra" as ING
+participant "<<Boundary>>\nCorregirCertificadoControlador" as CTRL
+participant "<<Control>>\nCorregirCertificadoInteractor" as UC
+participant "<<Control>>\nCalcularValorizacionServicio" as VLZ
+participant "<<Interface>>\nICertificadoRepositorio" as CREP
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nCertificado" as CER
+participant "<<Entity>>\nRevisionCertificado" as REV
+
+ING -> CTRL : corregirCertificado(certificadoId)
+activate CTRL
+CTRL -> UC : obtenerEmitido(certificadoId)
+activate UC
+UC -> CREP : buscarRevision(revisionId)
+activate CREP
+CREP --> UC : RevisionCertificado emitida
+deactivate CREP
+UC --> CTRL : revisión emitida con su archivo exportado
+deactivate UC
+CTRL --> ING : muestra la revisión emitida
+deactivate CTRL
+ING -> CTRL : confirmarCorreccion(certificadoId, motivo, cambios)
+activate CTRL
+CTRL -> UC : ejecutar(certificadoId, motivo, cambios, actorId)
+activate UC
+UC -> REV ** : crear(numero = anterior + 1, revisionAnterior)
+UC -> VLZ : calcular(lineas, configuracionObra)
+activate VLZ
+VLZ --> UC : Valorizacion de la revisión nueva
+deactivate VLZ
+UC -> CER : corregir(revisionNueva)
+activate CER
+UC -> CREP : guardar(certificado)
+activate CREP
+UC -> AUD : registrar(actor, fecha, obra, revisión, corrección)
+activate AUD
+deactivate AUD
+deactivate CREP
+deactivate CER
+UC --> CTRL : revisión nueva en Borrador
+deactivate UC
+CTRL --> ING : confirma la revisión nueva vinculada a la emitida
+deactivate CTRL
+@enduml

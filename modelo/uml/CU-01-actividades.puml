@@ -1,0 +1,41 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-01 — Crear obra y asignar responsables: actividades
+
+|Administrador|
+start
+|Administrador|
+:Solicita crear una obra.;
+|Obra Studio|
+:Presenta el formulario de datos\nidentificatorios y la lista de miembros de la\norganización.;
+|Administrador|
+:Ingresa código, nombre, dirección, fechas de\ninicio y fin y comitente de la obra.;
+|Obra Studio|
+:Comprueba que ninguna otra obra de la\norganización use el mismo código.;
+if (E1. ¿Código en uso?) then (sí)
+  :Otra obra de la organización ya usa ese\ncódigo; el sistema no registra la obra y pide\nun código distinto.;
+  end
+else (no)
+endif
+|Administrador|
+:Asigna los responsables y el rol de cada uno.;
+|Obra Studio|
+:Comprueba que cada responsable sea miembro de\nla organización y que su rol sea uno de los\nroles del sistema.;
+if (E2. ¿Responsable ajeno a la\norganización?) then (sí)
+  :El sistema rechaza la asignación, porque la\nobra y sus responsables pertenecen a la misma\norganización.;
+  end
+else (no)
+endif
+|Administrador|
+:Confirma la creación.;
+|Obra Studio|
+:Registra la obra con su configuración inicial\nen la moneda de la organización y los roles\nasignados, vigentes desde la fecha, y deja\nregistro de la operación.;
+note right
+  En cualquier paso:
+  E3 (RNF-01). El actor no tiene rol admin vigente en la
+    organización
+end note
+stop
+@enduml

@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-15 — Calcular costos por vía
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(CalcularCostosControlador, "CalcularCostosControlador", "Controller / Presenter")
+Component(CalcularCostosInteractor, "CalcularCostosInteractor", "Interactor")
+Component(CalcularCostoViaServicio, "CalcularCostoViaServicio", "Interactor")
+Component(AnalisisCostoUnitario, "AnalisisCostoUnitario", "Entidad de dominio")
+Component(IPresupuestoRepositorio, "IPresupuestoRepositorio", "Interfaz")
+
+Rel(web, CalcularCostosControlador, "1. analizarCostos(obraId, fechaCorte)")
+Rel(CalcularCostosControlador, CalcularCostosInteractor, "2. ejecutar(obraId, fechaCorte, actorId)")
+Rel(CalcularCostosInteractor, IPresupuestoRepositorio, "3. buscarVersionVigente(obraId)")
+Rel(CalcularCostosInteractor, IPresupuestoRepositorio, "4. listarACU(obraId)")
+Rel(CalcularCostosInteractor, CalcularCostoViaServicio, "5. calcular(acu, via)")
+Rel(CalcularCostoViaServicio, AnalisisCostoUnitario, "6. componentesPorVia(via)")
+@enduml

@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-08 — Corregir certificado emitido
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(CorregirCertificadoControlador, "CorregirCertificadoControlador", "Controller / Presenter")
+Component(CalcularValorizacionServicio, "CalcularValorizacionServicio", "Interactor")
+Component(CorregirCertificadoInteractor, "CorregirCertificadoInteractor", "Interactor")
+Component(Certificado, "Certificado", "Entidad de dominio")
+Component(RevisionCertificado, "RevisionCertificado", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(ICertificadoRepositorio, "ICertificadoRepositorio", "Interfaz")
+
+Rel(web, CorregirCertificadoControlador, "1. corregirCertificado(certificadoId)")
+Rel(CorregirCertificadoControlador, CorregirCertificadoInteractor, "2. obtenerEmitido(certificadoId)")
+Rel(CorregirCertificadoInteractor, ICertificadoRepositorio, "3. buscarRevision(revisionId)")
+Rel(web, CorregirCertificadoControlador, "4. confirmarCorreccion(certificadoId, motivo, cambios)")
+Rel(CorregirCertificadoControlador, CorregirCertificadoInteractor, "5. ejecutar(certificadoId, motivo, cambios, actorId)")
+Rel(CorregirCertificadoInteractor, RevisionCertificado, "6. crear(numero = anterior + 1, revisionAnterior)")
+Rel(CorregirCertificadoInteractor, CalcularValorizacionServicio, "7. calcular(lineas, configuracionObra)")
+Rel(CorregirCertificadoInteractor, Certificado, "8. corregir(revisionNueva)")
+Rel(CorregirCertificadoInteractor, ICertificadoRepositorio, "9. guardar(certificado)")
+Rel(CorregirCertificadoInteractor, IAuditoriaRepositorio, "10. registrar(actor, fecha, obra, revisión, corrección)")
+@enduml

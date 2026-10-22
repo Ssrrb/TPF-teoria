@@ -1,0 +1,66 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-02 — Importar presupuesto y cronograma
+
+actor "Ingeniero de Obra" as ING
+participant "<<Boundary>>\nImportarPresupuestoControlador" as CTRL
+participant "<<Control>>\nImportarPresupuestoInteractor" as UC
+participant "<<Control>>\nValidarEstructuraServicio" as VAL
+participant "<<Control>>\nContrastarTotalesServicio" as TOT
+participant "<<Interface>>\nILectorPlanilla" as LEC
+participant "<<Interface>>\nIAlmacenArchivos" as ALM
+participant "<<Interface>>\nIPresupuestoRepositorio" as REP
+participant "<<Entity>>\nVersionPresupuesto" as VER
+participant "<<Entity>>\nLineaPresupuesto" as LIN
+
+ING -> CTRL : importarPresupuesto(obraId, archivo)
+activate CTRL
+CTRL -> UC : ejecutar(solicitudImportacion)
+activate UC
+UC -> ALM : guardar(archivo)
+activate ALM
+ALM --> UC : ArchivoOrigen(hashSHA256)
+deactivate ALM
+UC -> REP : buscarPorHash(hashSHA256)
+activate REP
+REP --> UC : versionExistente | nulo
+deactivate REP
+alt el archivo ya fue importado (RNF-07)
+  UC --> CTRL : refiereVersionExistente(versionId)
+  deactivate UC
+else archivo nuevo
+  UC -> LEC : leer(archivo)
+  activate LEC
+  LEC --> UC : hojas y filas reconocidas
+  deactivate LEC
+  loop por cada fila de rubro, subrubro o ítem
+    UC -> LIN ** : crear(codigo, unidad, cantidad, precioUnitario)
+  end
+  UC -> VAL : validar(lineas)
+  activate VAL
+  VAL --> UC : incidencias(hoja, fila, columna)
+  deactivate VAL
+  UC -> TOT : contrastar(totalDeclarado, totalRecalculado)
+  activate TOT
+  TOT --> UC : InformeImportacion(diferencia, cuadra)
+  deactivate TOT
+  UC --> CTRL : previsualizacion(estructura, totales, incidencias)
+  CTRL --> ING : muestra estructura, ambos totales y datos inválidos
+  deactivate CTRL
+  ING -> CTRL : confirmarImportacion(solicitudId)
+  activate CTRL
+  CTRL -> UC : confirmar(solicitudId)
+  activate UC
+  UC -> VER ** : crear(numero, estado = Propuesta)
+  UC -> REP : guardarVersion(version)
+  activate REP
+  deactivate REP
+  UC --> CTRL : versionRegistrada(versionId)
+  deactivate UC
+  deactivate CTRL
+end
+CTRL --> ING : informa el resultado de la importación
+@enduml

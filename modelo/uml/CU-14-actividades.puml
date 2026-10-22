@@ -1,0 +1,43 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-14 — Certificar y valorizar subcontrato: actividades
+
+|Responsable Técnico|
+start
+|Responsable Técnico|
+:Selecciona el subcontrato y el período.;
+|Obra Studio|
+:Reúne las mediciones aprobadas del período con\nejecutor subcontratado dentro del alcance del\ncontrato.;
+if (E1. ¿Sin mediciones del subcontrato?) then (sí)
+  :No hay mediciones aprobadas con ejecutor\nsubcontratado en el período; el sistema no\ngenera el certificado.;
+  end
+else (no)
+endif
+if (A1. ¿Medición ya certificada?) then (sí)
+  :La medición integra otro certificado de\nsubcontrato; el sistema la excluye para no\nvalorizar dos veces el mismo trabajo físico.;
+else (no)
+endif
+|Responsable Técnico|
+:Solicita la valorización del certificado.;
+|Obra Studio|
+:Valoriza cada cantidad con el precio del\ncontrato, en guaraníes y con aritmética\ndecimal, aplica las retenciones del contrato y\npresenta por separado costo analítico,\nvalorización contractual, precio de venta y\npago.;
+|Responsable Técnico|
+:Emite el certificado de subcontrato.;
+|Obra Studio|
+:Registra el certificado de subcontrato Emitido\ncon número, fecha y actor, y su valorización\nen el control de costos del ECMS.;
+|Responsable Técnico|
+:Confirma el envío al ERP.;
+|Obra Studio|
+:Incluye CU-10: publica el evento de\ncertificado emitido para que el ERP registre\nel pago al subcontratista.;
+|Subcontratista|
+:Consulta el certificado emitido de su\ncontrato.;
+|Obra Studio|
+:Muestra la valorización de su contrato sin\nprecios de venta, márgenes ni datos de otros\ncontratos.;
+note right
+  En cualquier paso:
+  E2 (RNF-01). El actor no tiene rol vigente sobre la obra
+end note
+stop
+@enduml

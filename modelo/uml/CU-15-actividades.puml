@@ -1,0 +1,30 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-15 — Calcular costos por vía: actividades
+
+|Ingeniero de Obra|
+start
+|Ingeniero de Obra|
+:Selecciona la obra y la fecha de corte y\nsolicita el análisis de costos.;
+|Obra Studio|
+:Obtiene la versión de presupuesto vigente y\nlos análisis de costo unitario de sus ítems.;
+if (A1. ¿Ítem sin análisis de costo\nunitario?) then (sí)
+  :El sistema lo informa como ítem sin costo\ncalculado y continúa con los demás.;
+else (no)
+endif
+|Motor de Ingeniería|
+:Calcula el costo de cada ítem por las vías de\nmateriales, mano de obra y equipos.;
+|Obra Studio|
+:Suma los componentes de cada análisis con\naritmética decimal, en guaraníes, y agrega los\nimportes por ítem, rubro y obra.;
+|Ingeniero de Obra|
+:Revisa la comparación con el presupuesto\nvigente.;
+|Obra Studio|
+:Muestra cada importe con su vía, período,\nfuente y naturaleza junto al importe\npresupuestado, con fecha de corte, unidad y\nmoneda.;
+note right
+  En cualquier paso:
+  E1 (RNF-01). El actor no tiene rol vigente sobre la obra
+end note
+stop
+@enduml

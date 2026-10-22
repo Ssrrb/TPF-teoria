@@ -1,0 +1,106 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-04 — Registrar medición oficial
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class RegistrarMedicionControlador <<Boundary>> {
+    +abrirMedicion(obraId, periodoId, lineaId)
+    +registrarMedicion(lineaId, cantidad, ejecutor, evidencia)
+  }
+  class MedicionPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class RegistrarMedicionInteractor <<Control>> {
+    +prepararMedicion(periodoId, lineaId)
+    +ejecutar(solicitudMedicion, actorId)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class MedicionOficial <<Entity>> {
+  +id : UUID
+  -cantidad : Decimal
+  -unidad : String
+  -ejecutor : String
+  -/cantidadCertificable : Decimal
+  -...
+    --
+    +corregir(cantidad, ejecutor)
+    +crear(cantidad, unidad, ejecutor, estado = Registrada)
+  }
+  class Evidencia <<Entity>> {
+  +id : UUID
+  -nombre : String
+  -tipo : String
+  -ruta : String
+  -...
+    --
+    +crear(nombre, tipo, ruta)
+  }
+  class Periodo <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -fechaInicio : Date
+  -fechaFin : Date
+  -...
+  }
+  class LineaPresupuesto <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -tipo : String
+  -/importe : Decimal
+  -/cantidadMedida : Decimal
+  -/saldo : Decimal
+  -...
+  }
+  class VersionPresupuesto <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -estado : String
+  -fechaActivacion : DateTime
+  -/montoContractual : Decimal
+  }
+  interface IMedicionRepositorio <<Interface>> {
+  +buscarPorItem(lineaId, periodoId)
+  +guardar(medicion)
+  +acumuladoAprobado(lineaId)
+  }
+  interface IPresupuestoRepositorio <<Interface>> {
+  +buscarVersionVigente(obraId)
+  }
+  interface IAlmacenArchivos <<Interface>> {
+  +guardar(archivo)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+RegistrarMedicionControlador --> RegistrarMedicionInteractor
+RegistrarMedicionInteractor ..> MedicionPresentador
+RegistrarMedicionInteractor ..> IMedicionRepositorio
+RegistrarMedicionInteractor ..> IPresupuestoRepositorio
+RegistrarMedicionInteractor ..> IAlmacenArchivos
+RegistrarMedicionInteractor ..> IAuditoriaRepositorio
+RegistrarMedicionInteractor ..> MedicionOficial
+VersionPresupuesto "1" *-- "1..*" LineaPresupuesto
+LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto
+Periodo "1" *-- "0..*" MedicionOficial
+LineaPresupuesto "1" -- "0..*" MedicionOficial
+VersionPresupuesto "1" -- "0..*" MedicionOficial
+MedicionOficial "1" *-- "0..*" Evidencia
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

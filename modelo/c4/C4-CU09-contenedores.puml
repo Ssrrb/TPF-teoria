@@ -18,5 +18,5 @@ Rel(ADM, web, "Emitir certificado de avance", "HTTPS")
 Rel(web, ecms, "Invoca el caso de uso", "HTTPS/JSON")
 Rel(ecms, bd, "Lee y escribe", "SQL")
 Rel(ecms, archivos, "Conserva archivos", "API de objetos")
-Rel(ecms, erp, "Publica el certificado emitido", "Evento de dominio")
+Rel(ecms, erp, "Publica eventos de dominio", "Evento de dominio")
 @enduml

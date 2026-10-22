@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title CU-14 — Certificar y valorizar subcontrato: contenedores
+
+Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
+Person(SUB, "Subcontratista", "Consulta el estado de sus mediciones, certificados, valorizaciones y saldos.")
+System_Boundary(obra, "Obra Studio") {
+  Container(web, "Aplicación Web", "React + TypeScript", "Formularios del caso de uso.")
+  Container(ecms, "Motor ECMS", "TypeScript", "Reglas del caso de uso.")
+  ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")
+}
+System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")
+
+Rel(SUP, web, "Certificar y valorizar subcontrato", "HTTPS")
+Rel(SUB, web, "Certificar y valorizar subcontrato", "HTTPS")
+Rel(web, ecms, "Invoca el caso de uso", "HTTPS/JSON")
+Rel(ecms, bd, "Lee y escribe", "SQL")
+Rel(ecms, erp, "Publica eventos de dominio", "Evento de dominio")
+@enduml

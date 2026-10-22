@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-01 — Crear obra y asignar responsables
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(CrearObraControlador, "CrearObraControlador", "Controller / Presenter")
+Component(CrearObraInteractor, "CrearObraInteractor", "Interactor")
+Component(Obra, "Obra", "Entidad de dominio")
+Component(RolAsignado, "RolAsignado", "Entidad de dominio")
+Component(IObraRepositorio, "IObraRepositorio", "Interfaz")
+Component(IUsuarioRepositorio, "IUsuarioRepositorio", "Interfaz")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+
+Rel(web, CrearObraControlador, "1. nuevaObra(organizacionId)")
+Rel(CrearObraControlador, CrearObraInteractor, "2. prepararAlta(organizacionId)")
+Rel(CrearObraInteractor, IUsuarioRepositorio, "3. listarMiembros(organizacionId)")
+Rel(web, CrearObraControlador, "4. crearObra(datosObra, responsables)")
+Rel(CrearObraControlador, CrearObraInteractor, "5. ejecutar(solicitudAlta, actorId)")
+Rel(CrearObraInteractor, IObraRepositorio, "6. existeCodigo(codigo)")
+Rel(CrearObraInteractor, Obra, "7. crear(codigo, nombre, direccion, fechas, clienteId)")
+Rel(CrearObraInteractor, RolAsignado, "8. crear(usuarioId, rol, vigenteDesde)")
+Rel(CrearObraInteractor, IObraRepositorio, "9. guardar(obra)")
+Rel(CrearObraInteractor, IAuditoriaRepositorio, "10. registrar(actor, fecha, obra, alta)")
+@enduml

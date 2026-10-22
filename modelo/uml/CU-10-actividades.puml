@@ -1,0 +1,41 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-10 — Derivar documento financiero en ERP: actividades
+
+|Motor de Ingeniería|
+start
+|Motor de Ingeniería|
+:Publica el evento de certificado emitido.;
+|Obra Studio|
+:Recibe el evento y comprueba que el\ncertificado no tenga un documento financiero\nvinculado.;
+if (A1. ¿Certificado ya derivado?) then (sí)
+  :El certificado ya tiene un documento\nfinanciero vinculado; el sistema no registra\notro y refiere el existente.;
+  stop
+else (no)
+endif
+|Motor ERP|
+:Deriva el documento según el tipo de\ncertificado.;
+|Obra Studio|
+:Registra la factura al Cliente o el pago al\nSubcontratista con número, fecha y monto,\nvinculado al certificado, y entrega la factura\nal Cliente.;
+|Motor ERP|
+:Refleja el certificado en el avance físico-\nfinanciero.;
+|Obra Studio|
+:Actualiza el avance de la obra con fecha de\ncorte, unidad, moneda y procedencia de cada\ntotal.;
+if (A2. ¿Pago al subcontratista?) then (sí)
+  :Finanzas y Tesorería aprueba el pago y luego\nlo ejecuta; el sistema lo deja Aprobado y\ndespués Pagado, vinculado al certificado de\nsubcontrato.;
+  stop
+else (no)
+endif
+|Finanzas y Tesorería|
+:Registra el cobro de la factura.;
+|Obra Studio|
+:Deja la factura Cobrada con actor y fecha,\nvinculada a su certificado.;
+note right
+  En cualquier paso:
+  E1 (RNF-01). Finanzas y Tesorería no tiene rol miembro ERP
+    vigente
+end note
+stop
+@enduml

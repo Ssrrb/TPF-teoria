@@ -1,0 +1,59 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-11 — Proponer y aprobar movimiento presupuestario: actividades
+
+|Responsable Técnico|
+start
+|Responsable Técnico|
+:Selecciona la propuesta pendiente o el rubro o\nítem y solicita proponer un movimiento.;
+|Obra Studio|
+:Presenta los tipos ampliación, deducción y\nvariación de precio, y el saldo vigente del\nobjetivo.;
+if (A1. ¿Sobrecosto por otra causa?) then (sí)
+  :El actor clasifica la propuesta pendiente como\nretrabajo, atraso, fallo o cambio; no se\npropone movimiento y el excedente no se\ncertifica.;
+  stop
+else (no)
+endif
+|Responsable Técnico|
+:Clasifica la causa como adenda, indica tipo,\nobjetivo, cantidad o precio y motivo, y\nadjunta el respaldo.;
+|Obra Studio|
+:Calcula efecto monetario, límite, importe\nutilizado y saldo, y registra el movimiento\ncomo Propuesto.;
+|Administrador|
+:Revisa el movimiento propuesto.;
+|Obra Studio|
+:Comprueba que los datos estén completos y\ndentro del límite.;
+if (E1. ¿Datos incompletos o exceso sobre\nel límite sin excepción registrada?) then (sí)
+  :El sistema impide la aprobación interna e\nindica qué falta.;
+  end
+else (no)
+endif
+if (A2. ¿Rechazo interno?) then (sí)
+  :El Administrador rechaza el movimiento con su\nmotivo; el sistema lo deja Rechazado y el\npresupuesto vigente no cambia.;
+  stop
+else (no)
+endif
+|Administrador|
+:Aprueba internamente el movimiento.;
+|Obra Studio|
+:Registra la aprobación interna con actor y\nfecha.;
+|Administrador|
+:Informa la respuesta contractual del Cliente y\nadjunta su respaldo.;
+|Obra Studio|
+:Conserva el respaldo y pide confirmar la\naceptación contractual, que se registra por\nseparado de la aprobación interna.;
+if (A3. ¿El Cliente no acepta?) then (sí)
+  :El Administrador registra el rechazo\ncontractual; el sistema deja el movimiento\nRechazado y el presupuesto vigente no cambia.;
+  stop
+else (no)
+endif
+|Administrador|
+:Confirma la aceptación contractual y solicita\nactivar el movimiento.;
+|Obra Studio|
+:Registra la aprobación contractual y, en una\nsola operación, genera la versión de\npresupuesto nueva que refleja el movimiento,\nla deja Vigente, pasa la anterior a\nReemplazada y marca cubiertas las propuestas\npendientes alcanzadas.;
+note right
+  En cualquier paso:
+  E2 (RNF-03). Operación interrumpida
+  E3 (RNF-01). El actor no tiene rol vigente sobre la obra
+end note
+stop
+@enduml

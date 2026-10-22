@@ -1,0 +1,40 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-04 — Registrar medición oficial: actividades
+
+|Ingeniero de Obra|
+start
+|Ingeniero de Obra|
+:Selecciona la obra, el período abierto y el\nítem a medir.;
+|Obra Studio|
+:Presenta el formulario de medición, apto para\nteléfono, con la unidad del ítem, la cantidad\naprobada acumulada y el saldo de la versión\nvigente.;
+|Ingeniero de Obra|
+:Ingresa la cantidad medida, indica si el\nejecutor es propio o subcontratado y adjunta\nla evidencia.;
+|Obra Studio|
+:Identifica los campos requeridos y comprueba\nque no exista otra medición del mismo ítem en\nel período.;
+if (E1. ¿El ítem ya tiene una medición\nregistrada o aprobada en el\nperíodo?) then (sí)
+  :El sistema no crea otra, para no contabilizar\ndos veces el mismo trabajo físico.;
+  end
+else (no)
+endif
+if (E2. ¿Dato requerido faltante o inválido?) then (sí)
+  :El sistema señala el campo con un mensaje\nidentificable y no registra la medición hasta\nque se corrija.;
+  end
+else (no)
+endif
+if (A1. ¿Medición rechazada del ítem en el\nperíodo?) then (sí)
+  :El sistema la presenta para corregir su\ncantidad o su evidencia y reenviarla, sin\ncrear una medición nueva.;
+else (no)
+endif
+|Ingeniero de Obra|
+:Confirma el registro.;
+|Obra Studio|
+:Conserva la evidencia y registra la medición\nen estado Registrada con actor, fecha y\nversión de presupuesto, pendiente de\naprobación.;
+note right
+  En cualquier paso:
+  E3 (RNF-01). El actor no tiene rol vigente sobre la obra
+end note
+stop
+@enduml

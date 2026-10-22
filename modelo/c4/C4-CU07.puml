@@ -1,0 +1,28 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-07 — Generar borrador de certificado
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(GenerarBorradorControlador, "GenerarBorradorControlador", "Controller / Presenter")
+Component(GenerarBorradorInteractor, "GenerarBorradorInteractor", "Interactor")
+Component(CalcularValorizacionServicio, "CalcularValorizacionServicio", "Interactor")
+Component(DetectarAlertasServicio, "DetectarAlertasServicio", "Interactor")
+Component(Certificado, "Certificado", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IPresupuestoRepositorio, "IPresupuestoRepositorio", "Interfaz")
+Component(IMedicionRepositorio, "IMedicionRepositorio", "Interfaz")
+Component(ICertificadoRepositorio, "ICertificadoRepositorio", "Interfaz")
+
+Rel(web, GenerarBorradorControlador, "1. generarBorrador(obraId, periodoId)")
+Rel(GenerarBorradorControlador, GenerarBorradorInteractor, "2. ejecutar(periodoId, actorId)")
+Rel(GenerarBorradorInteractor, IMedicionRepositorio, "3. listarPorPeriodo(periodoId)")
+Rel(GenerarBorradorInteractor, IPresupuestoRepositorio, "4. buscarVersionVigente(obraId)")
+Rel(GenerarBorradorInteractor, Certificado, "5. crear(tipo = interno, estado = Borrador, revisión 1)")
+Rel(GenerarBorradorInteractor, IMedicionRepositorio, "6. acumuladoAprobado(lineaId)")
+Rel(GenerarBorradorInteractor, Certificado, "7. agregarLinea(cantidadPeriodo, precioUnitario, medicionId)")
+Rel(GenerarBorradorInteractor, CalcularValorizacionServicio, "8. calcular(lineas, configuracionObra)")
+Rel(GenerarBorradorInteractor, DetectarAlertasServicio, "9. detectar(lineas, versionVigente)")
+Rel(GenerarBorradorInteractor, ICertificadoRepositorio, "10. guardar(certificado)")
+Rel(GenerarBorradorInteractor, IAuditoriaRepositorio, "11. registrar(actor, fecha, obra, version, borrador)")
+@enduml

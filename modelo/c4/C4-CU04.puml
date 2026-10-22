@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-04 — Registrar medición oficial
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(RegistrarMedicionControlador, "RegistrarMedicionControlador", "Controller / Presenter")
+Component(RegistrarMedicionInteractor, "RegistrarMedicionInteractor", "Interactor")
+Component(MedicionOficial, "MedicionOficial", "Entidad de dominio")
+Component(Evidencia, "Evidencia", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IPresupuestoRepositorio, "IPresupuestoRepositorio", "Interfaz")
+Component(IAlmacenArchivos, "IAlmacenArchivos", "Interfaz")
+Component(IMedicionRepositorio, "IMedicionRepositorio", "Interfaz")
+
+Rel(web, RegistrarMedicionControlador, "1. abrirMedicion(obraId, periodoId, lineaId)")
+Rel(RegistrarMedicionControlador, RegistrarMedicionInteractor, "2. prepararMedicion(periodoId, lineaId)")
+Rel(RegistrarMedicionInteractor, IPresupuestoRepositorio, "3. buscarVersionVigente(obraId)")
+Rel(RegistrarMedicionInteractor, IMedicionRepositorio, "4. acumuladoAprobado(lineaId)")
+Rel(web, RegistrarMedicionControlador, "5. registrarMedicion(lineaId, cantidad, ejecutor, evidencia)")
+Rel(RegistrarMedicionControlador, RegistrarMedicionInteractor, "6. ejecutar(solicitudMedicion, actorId)")
+Rel(RegistrarMedicionInteractor, IMedicionRepositorio, "7. buscarPorItem(lineaId, periodoId)")
+Rel(RegistrarMedicionInteractor, MedicionOficial, "8. corregir(cantidad, ejecutor)")
+Rel(RegistrarMedicionInteractor, MedicionOficial, "9. crear(cantidad, unidad, ejecutor, estado = Registrada)")
+Rel(RegistrarMedicionInteractor, IAlmacenArchivos, "10. guardar(evidencia)")
+Rel(RegistrarMedicionInteractor, Evidencia, "11. crear(nombre, tipo, ruta)")
+Rel(RegistrarMedicionInteractor, IMedicionRepositorio, "12. guardar(medicion)")
+Rel(RegistrarMedicionInteractor, IAuditoriaRepositorio, "13. registrar(actor, fecha, obra, version, medición)")
+@enduml

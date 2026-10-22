@@ -1,0 +1,81 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-12 — Registrar contrato de subcontrato
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class RegistrarSubcontratoControlador <<Boundary>> {
+    +nuevoSubcontrato(obraId)
+    +registrarSubcontrato(socioId, numero, monto, modalidad, alcance)
+  }
+  class SubcontratoPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class RegistrarSubcontratoInteractor <<Control>> {
+    +prepararAlta(obraId)
+    +ejecutar(solicitudSubcontrato, actorId)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Subcontrato <<Entity>> {
+  +id : UUID
+  -numero : String
+  -montoContrato : Decimal
+  -modalidad : String
+  -/montoCertificado : Decimal
+  -/saldoCertificable : Decimal
+  -...
+    --
+    +crear(numero, montoContrato, modalidad, alcance)
+  }
+  class Socio <<Entity>> {
+  +id : UUID
+  -formaLegal : String
+  -identificador : String
+  -nombre : String
+  }
+  class Obra <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -nombre : String
+  -direccion : String
+  -...
+  }
+  interface ISubcontratoRepositorio <<Interface>> {
+  +listarSocios(organizacionId)
+  +guardar(subcontrato)
+  }
+  interface IPresupuestoRepositorio <<Interface>> {
+  +buscarVersionVigente(obraId)
+  }
+  interface IPublicadorEventos <<Interface>> {
+  +publicar(evento)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+RegistrarSubcontratoControlador --> RegistrarSubcontratoInteractor
+RegistrarSubcontratoInteractor ..> SubcontratoPresentador
+RegistrarSubcontratoInteractor ..> ISubcontratoRepositorio
+RegistrarSubcontratoInteractor ..> IPresupuestoRepositorio
+RegistrarSubcontratoInteractor ..> IPublicadorEventos
+RegistrarSubcontratoInteractor ..> IAuditoriaRepositorio
+RegistrarSubcontratoInteractor ..> Subcontrato
+Obra "1" o-- "0..*" Subcontrato
+Socio "1" -- "0..*" Subcontrato
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

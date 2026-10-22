@@ -1,0 +1,55 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-01 — Crear obra y asignar responsables
+
+actor "Administrador" as ADM
+participant "<<Boundary>>\nCrearObraControlador" as CTRL
+participant "<<Control>>\nCrearObraInteractor" as UC
+participant "<<Interface>>\nIUsuarioRepositorio" as UREP
+participant "<<Interface>>\nIObraRepositorio" as OREP
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nObra" as OBR
+participant "<<Entity>>\nRolAsignado" as ROL
+
+ADM -> CTRL : nuevaObra(organizacionId)
+activate CTRL
+CTRL -> UC : prepararAlta(organizacionId)
+activate UC
+UC -> UREP : listarMiembros(organizacionId)
+activate UREP
+UREP --> UC : miembros de la organización
+deactivate UREP
+UC --> CTRL : formulario y miembros
+deactivate UC
+CTRL --> ADM : muestra el formulario y los miembros
+deactivate CTRL
+ADM -> CTRL : crearObra(datosObra, responsables)
+activate CTRL
+CTRL -> UC : ejecutar(solicitudAlta, actorId)
+activate UC
+UC -> OREP : existeCodigo(codigo)
+activate OREP
+OREP --> UC : verdadero | falso
+deactivate OREP
+alt el código ya está en uso
+  UC --> CTRL : codigoEnUso(codigo)
+  deactivate UC
+else código disponible
+  UC -> OBR ** : crear(codigo, nombre, direccion, fechas, clienteId)
+  loop por cada responsable de la organización
+    UC -> ROL ** : crear(usuarioId, rol, vigenteDesde)
+  end
+  UC -> OREP : guardar(obra)
+  activate OREP
+  UC -> AUD : registrar(actor, fecha, obra, alta)
+  activate AUD
+  UC --> CTRL : obraRegistrada(obraId)
+  deactivate AUD
+  deactivate OREP
+end
+CTRL --> ADM : informa la obra creada y sus responsables
+deactivate CTRL
+@enduml

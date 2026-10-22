@@ -1,0 +1,125 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-14 — Certificar y valorizar subcontrato
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class CertificarSubcontratoControlador <<Boundary>> {
+    +certificarSubcontrato(subcontratoId, periodoId)
+    +emitirCertificado(certificadoId)
+    +verCertificado(certificadoId)
+  }
+  class CertificadoPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class CertificarSubcontratoInteractor <<Control>> {
+    +ejecutar(subcontratoId, periodoId, actorId)
+    +emitir(certificadoId, actorId)
+    +consultar(certificadoId, actorId)
+  }
+  class CalcularValorizacionServicio <<Control>> {
+    +calcular(lineas, preciosContrato)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Certificado <<Entity>> {
+  +id : UUID
+  -numero : String
+  -tipo : String
+  -fechaEmision : Date
+  -...
+    --
+    +crear(tipo = subcontrato, estado = Borrador)
+    +emitir(numero, fecha, destinatario, actorId)
+  }
+  class RevisionCertificado <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -fechaGeneracion : DateTime
+  -subtotal : Decimal
+  -/impuestos : Decimal
+  -/retenciones : Decimal
+  -/total : Decimal
+  }
+  class LineaCertificado <<Entity>> {
+  +id : UUID
+  -cantidadPeriodo : Decimal
+  -precioUnitario : Decimal
+  -/importe : Decimal
+  -/cantidadAcumulada : Decimal
+  }
+  class RetencionAplicada <<Entity>> {
+  +id : UUID
+  -porcentaje : Decimal
+  -base : Decimal
+  -/importe : Decimal
+  }
+  class Subcontrato <<Entity>> {
+  +id : UUID
+  -numero : String
+  -montoContrato : Decimal
+  -modalidad : String
+  -/montoCertificado : Decimal
+  -/saldoCertificable : Decimal
+  -...
+  }
+  class MedicionOficial <<Entity>> {
+  +id : UUID
+  -cantidad : Decimal
+  -unidad : String
+  -ejecutor : String
+  -/cantidadCertificable : Decimal
+  -...
+  }
+  class Valorizacion <<ValueObject>> {
+  -subtotal : Decimal
+  -impuestos : Decimal
+  -retenciones : Decimal
+  -...
+  }
+  interface ISubcontratoRepositorio <<Interface>> {
+  +buscar(subcontratoId)
+  }
+  interface IMedicionRepositorio <<Interface>> {
+  +listarPorSubcontrato(subcontratoId)
+  }
+  interface ICertificadoRepositorio <<Interface>> {
+  +guardar(certificado)
+  +siguienteNumero(obraId)
+  }
+  interface IPublicadorEventos <<Interface>> {
+  +publicar(evento)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+CertificarSubcontratoControlador --> CertificarSubcontratoInteractor
+CertificarSubcontratoInteractor --> CalcularValorizacionServicio
+CertificarSubcontratoInteractor ..> CertificadoPresentador
+CertificarSubcontratoInteractor ..> ISubcontratoRepositorio
+CertificarSubcontratoInteractor ..> IMedicionRepositorio
+CertificarSubcontratoInteractor ..> ICertificadoRepositorio
+CertificarSubcontratoInteractor ..> IPublicadorEventos
+CertificarSubcontratoInteractor ..> IAuditoriaRepositorio
+CertificarSubcontratoInteractor ..> Certificado
+Subcontrato "0..1" -- "0..*" Certificado
+Certificado "1" *-- "1..*" RevisionCertificado
+RevisionCertificado "1" *-- "1..*" LineaCertificado
+MedicionOficial "1" -- "0..1" LineaCertificado
+RevisionCertificado "1" *-- "0..*" RetencionAplicada
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

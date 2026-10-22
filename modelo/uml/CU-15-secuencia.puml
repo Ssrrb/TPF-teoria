@@ -1,0 +1,41 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-15 — Calcular costos por vía
+
+actor "Ingeniero de Obra" as ING
+participant "<<Boundary>>\nCalcularCostosControlador" as CTRL
+participant "<<Control>>\nCalcularCostosInteractor" as UC
+participant "<<Control>>\nCalcularCostoViaServicio" as VIA
+participant "<<Interface>>\nIPresupuestoRepositorio" as PREP
+participant "<<Entity>>\nAnalisisCostoUnitario" as ACU
+
+ING -> CTRL : analizarCostos(obraId, fechaCorte)
+activate CTRL
+CTRL -> UC : ejecutar(obraId, fechaCorte, actorId)
+activate UC
+UC -> PREP : buscarVersionVigente(obraId)
+activate PREP
+PREP --> UC : VersionPresupuesto vigente
+deactivate PREP
+UC -> PREP : listarACU(obraId)
+activate PREP
+PREP --> UC : análisis de costo unitario por ítem
+deactivate PREP
+loop por cada ítem y vía: materiales, mano de obra y equipos
+  UC -> VIA : calcular(acu, via)
+  activate VIA
+  VIA -> ACU : componentesPorVia(via)
+  activate ACU
+  ACU --> VIA : ComponenteACU de la vía
+  deactivate ACU
+  VIA --> UC : costo del ítem por vía (RNF-06)
+  deactivate VIA
+end
+UC --> CTRL : costos por obra, rubro e ítem frente al presupuesto vigente
+deactivate UC
+CTRL --> ING : muestra la comparación con fecha de corte, unidad y moneda
+deactivate CTRL
+@enduml

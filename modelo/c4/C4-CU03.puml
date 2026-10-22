@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-03 — Confirmar estructura y activar versión vigente
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(ActivarVersionControlador, "ActivarVersionControlador", "Controller / Presenter")
+Component(ActivarVersionInteractor, "ActivarVersionInteractor", "Interactor")
+Component(VersionPresupuesto, "VersionPresupuesto", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IPresupuestoRepositorio, "IPresupuestoRepositorio", "Interfaz")
+Component(IReloj, "IReloj", "Interfaz")
+
+Rel(web, ActivarVersionControlador, "1. abrirVersion(versionId)")
+Rel(ActivarVersionControlador, ActivarVersionInteractor, "2. obtenerVersion(versionId)")
+Rel(ActivarVersionInteractor, IPresupuestoRepositorio, "3. buscarVersion(versionId)")
+Rel(web, ActivarVersionControlador, "4. activarVersion(versionId)")
+Rel(ActivarVersionControlador, ActivarVersionInteractor, "5. activar(versionId, actorId)")
+Rel(ActivarVersionInteractor, IPresupuestoRepositorio, "6. buscarVersionVigente(obraId)")
+Rel(ActivarVersionInteractor, IReloj, "7. ahora()")
+Rel(ActivarVersionInteractor, VersionPresupuesto, "8. confirmarEstructura()")
+Rel(ActivarVersionInteractor, VersionPresupuesto, "9. activar(fecha)")
+Rel(ActivarVersionInteractor, VersionPresupuesto, "10. reemplazar()")
+Rel(ActivarVersionInteractor, IPresupuestoRepositorio, "11. guardarVersion(version)")
+Rel(ActivarVersionInteractor, IAuditoriaRepositorio, "12. registrar(actor, fecha, obra, version, activación)")
+Rel(web, ActivarVersionControlador, "13. descartarVersion(versionId)")
+Rel(ActivarVersionControlador, ActivarVersionInteractor, "14. descartar(versionId, actorId)")
+Rel(ActivarVersionInteractor, VersionPresupuesto, "15. descartar()")
+Rel(ActivarVersionInteractor, IPresupuestoRepositorio, "16. guardarVersion(version)")
+Rel(ActivarVersionInteractor, IAuditoriaRepositorio, "17. registrar(actor, fecha, obra, version, descarte)")
+@enduml

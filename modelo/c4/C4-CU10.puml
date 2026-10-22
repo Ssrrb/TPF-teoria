@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-10 — Derivar documento financiero en ERP
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Container(act_ecms, "Motor de Ingeniería", "Motor de Obra Studio", "Motor de obra de Obra Studio.")
+Component(DocumentoFinancieroControlador, "DocumentoFinancieroControlador", "Controller / Presenter")
+Component(DerivarDocumentoInteractor, "DerivarDocumentoInteractor", "Interactor")
+Component(DocumentoFinancieroERP, "DocumentoFinancieroERP", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IDocumentoFinancieroRepositorio, "IDocumentoFinancieroRepositorio", "Interfaz")
+
+Rel(act_ecms, DocumentoFinancieroControlador, "1. certificadoEmitido(certificadoId, tipo, monto)")
+Rel(DocumentoFinancieroControlador, DerivarDocumentoInteractor, "2. derivar(certificadoId, tipo, monto)")
+Rel(DerivarDocumentoInteractor, IDocumentoFinancieroRepositorio, "3. buscarPorCertificado(certificadoId)")
+Rel(DerivarDocumentoInteractor, DocumentoFinancieroERP, "4. crear(tipo, numero, fecha, monto, estado = Registrado)")
+Rel(DerivarDocumentoInteractor, IDocumentoFinancieroRepositorio, "5. guardar(documento)")
+Rel(DerivarDocumentoInteractor, IAuditoriaRepositorio, "6. registrar(actor, fecha, obra, certificado, documento)")
+Rel(DocumentoFinancieroControlador, web, "7. entrega la factura del certificado")
+Rel(web, DocumentoFinancieroControlador, "8. registrarCobro(documentoId)")
+Rel(DocumentoFinancieroControlador, DerivarDocumentoInteractor, "9. cobrar(documentoId, actorId)")
+Rel(DerivarDocumentoInteractor, DocumentoFinancieroERP, "10. registrarCobro(fecha)")
+Rel(web, DocumentoFinancieroControlador, "11. aprobarPago(documentoId)")
+Rel(DocumentoFinancieroControlador, DerivarDocumentoInteractor, "12. aprobarPago(documentoId, actorId)")
+Rel(DerivarDocumentoInteractor, DocumentoFinancieroERP, "13. aprobarPago(fecha)")
+Rel(web, DocumentoFinancieroControlador, "14. ejecutarPago(documentoId)")
+Rel(DocumentoFinancieroControlador, DerivarDocumentoInteractor, "15. ejecutarPago(documentoId, actorId)")
+Rel(DerivarDocumentoInteractor, DocumentoFinancieroERP, "16. pagar(fecha)")
+Rel(DerivarDocumentoInteractor, IDocumentoFinancieroRepositorio, "17. guardar(documento)")
+Rel(DerivarDocumentoInteractor, IAuditoriaRepositorio, "18. registrar(actor, fecha, obra, documento, cobro o pago)")
+@enduml

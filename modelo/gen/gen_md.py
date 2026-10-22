@@ -5,6 +5,7 @@ import pathlib, yaml
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 PROY = RAIZ.parent
 from modelo import cargar
+import plan
 M = cargar()
 actores = {a["id"]: a for a in M["actores"]}
 L = []
@@ -62,23 +63,29 @@ w("")
 for r in M["relaciones_cu"]:
     w(f'- `{r["origen"]}` **«{r["tipo"]}»** `{r["destino"]}`')
 w("")
+w("Generalización de actores (los padres son abstractos y no tienen casos de uso propios):")
+w("")
+for g in M.get("generalizacion_actores", []):
+    hijos = ", ".join(actores[h]["nombre"] for h in g["hijos"])
+    w(f'- **{g["nombre"]}** ← {hijos}. {" ".join(g["descripcion"].split())}')
+w("")
 
 w("## 4. Máquinas de estado")
 w("")
-for idx, (ent, maq) in enumerate(M["estados"].items(), start=12):
+for ent, maq in M["estados"].items():
     w(f"### {ent}")
     w("")
-    w(f'![Estados de {ent}](modelo/out/{idx}-estado-{ent}.png)')
+    w(f'![Estados de {ent}](modelo/out/{plan.estado(ent)}.png)')
     w("")
     w("| Estado | Significado |")
     w("|---|---|")
     for e in maq["estados"]:
         w(f'| {e["n"]} | {e["d"]} |')
     w("")
-    w("| Desde | Evento | Guarda | Hacia |")
-    w("|---|---|---|---|")
+    w("| Desde | Evento | Guarda | Hacia | Caso de uso |")
+    w("|---|---|---|---|---|")
     for t_ in maq["transiciones"]:
-        w(f'| {t_["de"]} | {t_["evento"]} | {t_.get("guarda", "—")} | {t_["a"]} |')
+        w(f'| {t_["de"]} | {t_["evento"]} | {t_.get("guarda", "—")} | {t_["a"]} | {", ".join(plan.cus(t_))} |')
     w("")
 
 w("## 5. Decisiones de modelado")
@@ -118,22 +125,24 @@ w("")
 w("")
 for n, d in [("Contexto", "Obra Studio y su entorno."),
              ("Contenedores", "Estructura interna de Obra Studio."),
-             ("Componentes", "Los cuatro anillos de Clean Architecture dentro del Motor ECMS."),
-             ("CU02", "Interacción de componentes al importar el presupuesto."),
-             ("CU05", "Interacción de componentes al aprobar una medición."),
-             ("CU09", "Interacción de componentes al emitir un certificado.")]:
+             ("Componentes", "Los cuatro anillos de Clean Architecture dentro del Motor ECMS.")]:
     w(f'**{n}.** {d}')
     w("")
     w(f'![{n}](modelo/out/c4/C4-{n}.png)')
     w("")
+w("Cada caso de uso tiene además su contexto, sus contenedores y su vista dinámica C4; el "
+  "documento los ubica en la sección de cada caso (ver la tabla siguiente).")
+w("")
 w("")
 
-w("Diagramas UML del entregable (`modelo/out/`):")
+w("Figuras del entregable en el orden de la plantilla (`modelo/gen/plan.py`). El modelo "
+  f"conceptual (`modelo/out/{plan.conceptual()}.png`) se genera como apoyo y no integra el documento.")
 w("")
-w("| Archivo | Diagrama |")
-w("|---|---|")
-for png in sorted((RAIZ / "out").glob("*.png")):
-    w(f'| `{png.name}` | {png.stem.split("-", 1)[1].replace("-", " ")} |')
+w("| Figura | Archivo | Diagrama |")
+w("|---|---|---|")
+for i, f in enumerate(plan.figuras(M), start=1):
+    ruta = "/".join(x for x in ("modelo/out", f["carpeta"], f'{f["archivo"]}.png') if x)
+    w(f'| {i} | `{ruta}` | {f["pie"]} |')
 w("")
 
 w("## 7. Trazabilidad con la implementación")
@@ -155,6 +164,7 @@ w("```")
 w("modelo/")
 w("  modelo.yaml      fuente única: actores, requisitos, casos de uso, entidades, estados, tablas")
 w("  gen/validar.py   chequeos de consistencia; el build falla si algo no cierra")
+w("  gen/plan.py      qué diagrama va en cada sección de la plantilla y cómo se llama su archivo")
 w("  gen/gen_puml.py  genera los diagramas UML")
 w("  gen/gen_c4.py    genera las vistas C4-PlantUML\n  gen/gen_dsl.py   genera el workspace de Structurizr\n  gen/modelo.py    carga el YAML y resuelve ids a nombres")
 w("  gen/gen_docx.py  genera el documento con el formato de la cátedra")

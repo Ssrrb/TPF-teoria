@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-16 — Consultar reportes y Curva S
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(ConsultarReportesControlador, "ConsultarReportesControlador", "Controller / Presenter")
+Component(ConsultarReportesInteractor, "ConsultarReportesInteractor", "Interactor")
+Component(GenerarCurvaSServicio, "GenerarCurvaSServicio", "Interactor")
+Component(IPresupuestoRepositorio, "IPresupuestoRepositorio", "Interfaz")
+Component(IConsultaReportes, "IConsultaReportes", "Interfaz")
+
+Rel(web, ConsultarReportesControlador, "1. consultarCurvaS(obraId, fechaCorte)")
+Rel(ConsultarReportesControlador, ConsultarReportesInteractor, "2. curvaS(obraId, fechaCorte, actorId)")
+Rel(ConsultarReportesInteractor, IPresupuestoRepositorio, "3. buscarVersionVigente(obraId)")
+Rel(ConsultarReportesInteractor, IConsultaReportes, "4. avanceFisico(obraId, fechaCorte)")
+Rel(ConsultarReportesInteractor, IConsultaReportes, "5. avanceFinanciero(obraId, fechaCorte)")
+Rel(ConsultarReportesInteractor, IConsultaReportes, "6. pendienteDeMovimiento(obraId, fechaCorte)")
+Rel(ConsultarReportesInteractor, GenerarCurvaSServicio, "7. componer(series, fechaCorte)")
+Rel(web, ConsultarReportesControlador, "8. consultarResumen(obraId, fechaCorte)")
+Rel(ConsultarReportesControlador, ConsultarReportesInteractor, "9. resumen(obraId, fechaCorte, actorId)")
+Rel(ConsultarReportesInteractor, IConsultaReportes, "10. resumenPorRubro(obraId, fechaCorte)")
+Rel(web, ConsultarReportesControlador, "11. consultarRespaldo(cifraId)")
+Rel(ConsultarReportesControlador, ConsultarReportesInteractor, "12. respaldo(cifraId)")
+Rel(ConsultarReportesInteractor, IConsultaReportes, "13. respaldo(cifraId)")
+@enduml

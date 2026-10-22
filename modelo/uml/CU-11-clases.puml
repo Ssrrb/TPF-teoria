@@ -1,0 +1,121 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-11 — Proponer y aprobar movimiento presupuestario
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class MovimientoControlador <<Boundary>> {
+    +proponerMovimiento(obraId, objetivoId)
+    +registrarPropuesta(causa, tipo, objetivoId, cantidad, precio, motivo, respaldo)
+    +aprobarInterno(movimientoId)
+    +registrarAprobacionContractual(movimientoId, respaldoCliente)
+    +activarMovimiento(movimientoId)
+  }
+  class MovimientoPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class MovimientoInteractor <<Control>> {
+    +prepararPropuesta(objetivoId)
+    +proponer(solicitudMovimiento, actorId)
+    +aprobarInterno(movimientoId, actorId)
+    +aprobarContractual(movimientoId, actorId)
+    +activar(movimientoId, actorId)
+  }
+  class EvaluarLimiteServicio <<Control>> {
+    +evaluar(tipo, cantidad, precio, saldoVigente)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class MovimientoPresupuestario <<Entity>> {
+  +id : UUID
+  -tipo : String
+  -motivo : String
+  -montoEfecto : Decimal
+  -/importeUtilizado : Decimal
+  -/saldoDisponible : Decimal
+  -...
+    --
+    +crear(tipo, motivo, montoEfecto, limite, estado = Propuesto)
+    +aprobarInterno(actorId, fecha)
+    +aprobarContractual(actorId, fecha, respaldoCliente)
+    +activar(versionId)
+    +cubrirPropuestasPendientes()
+  }
+  class Aprobacion <<Entity>> {
+  +id : UUID
+  -tipo : String
+  -fecha : DateTime
+  -observacion : String
+  }
+  class PropuestaPendiente <<Entity>> {
+  +id : UUID
+  -cantidad : Decimal
+  -estado : String
+  -causa : String
+  -...
+  }
+  class LineaPresupuesto <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -tipo : String
+  -/importe : Decimal
+  -/cantidadMedida : Decimal
+  -/saldo : Decimal
+  -...
+  }
+  class VersionPresupuesto <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -estado : String
+  -fechaActivacion : DateTime
+  -/montoContractual : Decimal
+    --
+    +crear(numero siguiente, líneas con el movimiento)
+    +activar(fecha)
+    +reemplazar()
+  }
+  interface IMovimientoRepositorio <<Interface>> {
+  +buscar(movimientoId)
+  +guardar(movimiento)
+  }
+  interface IPresupuestoRepositorio <<Interface>> {
+  +buscarVersionVigente(obraId)
+  +guardarVersion(version)
+  }
+  interface IAlmacenArchivos <<Interface>> {
+  +guardar(archivo)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+MovimientoControlador --> MovimientoInteractor
+MovimientoInteractor --> EvaluarLimiteServicio
+MovimientoInteractor ..> MovimientoPresentador
+MovimientoInteractor ..> IMovimientoRepositorio
+MovimientoInteractor ..> IPresupuestoRepositorio
+MovimientoInteractor ..> IAlmacenArchivos
+MovimientoInteractor ..> IAuditoriaRepositorio
+MovimientoInteractor ..> MovimientoPresupuestario
+VersionPresupuesto "1" *-- "1..*" LineaPresupuesto
+LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto
+MovimientoPresupuestario "0..1" -- "0..*" PropuestaPendiente
+LineaPresupuesto "1" -- "0..*" MovimientoPresupuestario
+VersionPresupuesto "0..1" -- "0..*" MovimientoPresupuestario
+MovimientoPresupuestario "0..1" *-- "0..*" Aprobacion
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

@@ -1,0 +1,44 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-05 — Aprobar o rechazar medición oficial: actividades
+
+|Responsable Técnico|
+start
+|Responsable Técnico|
+:Selecciona la obra y el período a revisar.;
+|Obra Studio|
+:Lista las mediciones registradas con su\ncantidad, unidad, ejecutor propio o\nsubcontratado y evidencia adjunta.;
+|Responsable Técnico|
+:Abre una medición y revisa su evidencia.;
+|Obra Studio|
+:Muestra la cantidad del período, las\nmediciones aprobadas acumuladas y el saldo del\npresupuesto vigente para ese ítem.;
+|Responsable Técnico|
+:Aprueba la medición.;
+|Obra Studio|
+:Compara la cantidad medida con el saldo de la\nversión vigente y determina la cantidad\ncertificable.;
+if (A1. ¿La cantidad supera el saldo del\npresupuesto vigente?) then (sí)
+  :El sistema aprueba solo la parte cubierta y\nregistra el exceso como propuesta pendiente,\nque no integra la medición oficial\ncertificable hasta que un movimiento aprobado\nla cubra. Punto de extensión: CU-11, donde el\nsobrecosto se clasifica como adenda, cubierta\npor un movimiento presupuestario, o por otra\ncausa (retrabajo, atraso, fallo o cambio).;
+else (no)
+endif
+if (A2. ¿Rechazo?) then (sí)
+  :El actor indica el motivo; el sistema registra\nla medición como rechazada con decisión, actor\ny fecha, y la devuelve al Ingeniero de Obra.;
+  stop
+else (no)
+endif
+|Responsable Técnico|
+:Confirma la decisión.;
+|Obra Studio|
+:Registra la medición como aprobada con\ndecisión, actor, fecha y versión, e incrementa\nel acumulado físico una sola vez.;
+|Responsable Técnico|
+:Repite la revisión para las mediciones\nrestantes del período.;
+|Obra Studio|
+:Actualiza el estado del período y habilita su\ncierre cuando no quedan mediciones pendientes.;
+note right
+  En cualquier paso:
+  E1 (RNF-01). El actor carece de rol vigente sobre la obra
+  E2. Operación interrumpida
+end note
+stop
+@enduml

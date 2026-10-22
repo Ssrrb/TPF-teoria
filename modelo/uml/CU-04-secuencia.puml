@@ -1,0 +1,64 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-04 — Registrar medición oficial
+
+actor "Ingeniero de Obra" as ING
+participant "<<Boundary>>\nRegistrarMedicionControlador" as CTRL
+participant "<<Control>>\nRegistrarMedicionInteractor" as UC
+participant "<<Interface>>\nIPresupuestoRepositorio" as PREP
+participant "<<Interface>>\nIMedicionRepositorio" as MREP
+participant "<<Interface>>\nIAlmacenArchivos" as ALM
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nMedicionOficial" as MED
+participant "<<Entity>>\nEvidencia" as EVI
+
+ING -> CTRL : abrirMedicion(obraId, periodoId, lineaId)
+activate CTRL
+CTRL -> UC : prepararMedicion(periodoId, lineaId)
+activate UC
+UC -> PREP : buscarVersionVigente(obraId)
+activate PREP
+PREP --> UC : VersionPresupuesto vigente
+deactivate PREP
+UC -> MREP : acumuladoAprobado(lineaId)
+activate MREP
+MREP --> UC : cantidadAcumulada
+deactivate MREP
+UC --> CTRL : unidad, acumulado aprobado y saldo del ítem
+deactivate UC
+CTRL --> ING : muestra el formulario de medición
+deactivate CTRL
+ING -> CTRL : registrarMedicion(lineaId, cantidad, ejecutor, evidencia)
+activate CTRL
+CTRL -> UC : ejecutar(solicitudMedicion, actorId)
+activate UC
+UC -> MREP : buscarPorItem(lineaId, periodoId)
+activate MREP
+MREP --> UC : medición existente | nulo
+deactivate MREP
+alt existe una medición Rechazada del ítem (RF-10)
+  UC -> MED : corregir(cantidad, ejecutor)
+  activate MED
+  deactivate MED
+else el ítem no tiene medición en el período
+  UC -> MED ** : crear(cantidad, unidad, ejecutor, estado = Registrada)
+end
+UC -> ALM : guardar(evidencia)
+activate ALM
+ALM --> UC : ruta
+deactivate ALM
+UC -> EVI ** : crear(nombre, tipo, ruta)
+UC -> MREP : guardar(medicion)
+activate MREP
+UC -> AUD : registrar(actor, fecha, obra, version, medición)
+activate AUD
+deactivate AUD
+deactivate MREP
+UC --> CTRL : medicionRegistrada(medicionId)
+deactivate UC
+CTRL --> ING : confirma la medición pendiente de aprobación
+deactivate CTRL
+@enduml

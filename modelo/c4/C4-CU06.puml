@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-06 — Cerrar período de medición
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(CerrarPeriodoControlador, "CerrarPeriodoControlador", "Controller / Presenter")
+Component(CerrarPeriodoInteractor, "CerrarPeriodoInteractor", "Interactor")
+Component(Periodo, "Periodo", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IReloj, "IReloj", "Interfaz")
+Component(IMedicionRepositorio, "IMedicionRepositorio", "Interfaz")
+
+Rel(web, CerrarPeriodoControlador, "1. abrirPeriodo(obraId, periodoId)")
+Rel(CerrarPeriodoControlador, CerrarPeriodoInteractor, "2. obtenerEstado(periodoId)")
+Rel(CerrarPeriodoInteractor, IMedicionRepositorio, "3. listarPorPeriodo(periodoId)")
+Rel(web, CerrarPeriodoControlador, "4. cerrarPeriodo(periodoId)")
+Rel(CerrarPeriodoControlador, CerrarPeriodoInteractor, "5. ejecutar(periodoId, actorId)")
+Rel(CerrarPeriodoInteractor, IMedicionRepositorio, "6. buscarPeriodo(periodoId)")
+Rel(CerrarPeriodoInteractor, Periodo, "7. puedeCerrarse()")
+Rel(CerrarPeriodoInteractor, IReloj, "8. ahora()")
+Rel(CerrarPeriodoInteractor, Periodo, "9. cerrar(actorId, fecha)")
+Rel(CerrarPeriodoInteractor, IMedicionRepositorio, "10. guardarPeriodo(periodo)")
+Rel(CerrarPeriodoInteractor, IAuditoriaRepositorio, "11. registrar(actor, fecha, obra, período, cierre)")
+@enduml

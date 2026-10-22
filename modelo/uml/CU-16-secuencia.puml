@@ -1,0 +1,67 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-16 — Consultar reportes y Curva S
+
+actor "Administrador" as ADM
+participant "<<Boundary>>\nConsultarReportesControlador" as CTRL
+participant "<<Control>>\nConsultarReportesInteractor" as UC
+participant "<<Control>>\nGenerarCurvaSServicio" as CRV
+participant "<<Interface>>\nIPresupuestoRepositorio" as PREP
+participant "<<Interface>>\nIConsultaReportes" as CONS
+
+ADM -> CTRL : consultarCurvaS(obraId, fechaCorte)
+activate CTRL
+CTRL -> UC : curvaS(obraId, fechaCorte, actorId)
+activate UC
+UC -> PREP : buscarVersionVigente(obraId)
+activate PREP
+PREP --> UC : VersionPresupuesto vigente
+deactivate PREP
+UC -> CONS : avanceFisico(obraId, fechaCorte)
+activate CONS
+CONS --> UC : cantidades aprobadas ponderadas
+deactivate CONS
+UC -> CONS : avanceFinanciero(obraId, fechaCorte)
+activate CONS
+CONS --> UC : importes certificados
+deactivate CONS
+UC -> CONS : pendienteDeMovimiento(obraId, fechaCorte)
+activate CONS
+CONS --> UC : cantidades pendientes de movimiento vigente
+deactivate CONS
+UC -> CRV : componer(series, fechaCorte)
+activate CRV
+CRV --> UC : tres series a la misma fecha de corte
+deactivate CRV
+UC --> CTRL : Curva S con unidad, moneda y procedencia (RNF-11)
+deactivate UC
+CTRL --> ADM : muestra la Curva S
+deactivate CTRL
+ADM -> CTRL : consultarResumen(obraId, fechaCorte)
+activate CTRL
+CTRL -> UC : resumen(obraId, fechaCorte, actorId)
+activate UC
+UC -> CONS : resumenPorRubro(obraId, fechaCorte)
+activate CONS
+CONS --> UC : presupuesto, costos, certificaciones y saldos por rubro
+deactivate CONS
+UC --> CTRL : resumen por obra y rubro
+deactivate UC
+CTRL --> ADM : muestra el resumen por rubro
+deactivate CTRL
+ADM -> CTRL : consultarRespaldo(cifraId)
+activate CTRL
+CTRL -> UC : respaldo(cifraId)
+activate UC
+UC -> CONS : respaldo(cifraId)
+activate CONS
+CONS --> UC : registro o documento fuente
+deactivate CONS
+UC --> CTRL : respaldo de la cifra
+deactivate UC
+CTRL --> ADM : presenta el registro o documento fuente
+deactivate CTRL
+@enduml

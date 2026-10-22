@@ -1,0 +1,95 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-01 — Crear obra y asignar responsables
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class CrearObraControlador <<Boundary>> {
+    +nuevaObra(organizacionId)
+    +crearObra(datosObra, responsables)
+  }
+  class ObraPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class CrearObraInteractor <<Control>> {
+    +prepararAlta(organizacionId)
+    +ejecutar(solicitudAlta, actorId)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Obra <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -nombre : String
+  -direccion : String
+  -...
+    --
+    +crear(codigo, nombre, direccion, fechas, clienteId)
+  }
+  class ConfiguracionObra <<Entity>> {
+  +id : UUID
+  -tasaIVA : Decimal
+  -moneda : String
+  -toleranciaDesvio : Decimal
+  }
+  class RolAsignado <<Entity>> {
+  -rol : String
+  -vigenteDesde : Date
+    --
+    +crear(usuarioId, rol, vigenteDesde)
+  }
+  class Usuario <<Entity>> {
+  +id : UUID
+  -nombre : String
+  -email : String
+  }
+  class Organizacion <<Entity>> {
+  +id : UUID
+  -nombre : String
+  -pais : String
+  -moneda : String
+  }
+  class Cliente <<Entity>> {
+  +id : UUID
+  -formaLegal : String
+  -identificador : String
+  -nombre : String
+  }
+  interface IObraRepositorio <<Interface>> {
+  +existeCodigo(codigo)
+  +guardar(obra)
+  }
+  interface IUsuarioRepositorio <<Interface>> {
+  +listarMiembros(organizacionId)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+CrearObraControlador --> CrearObraInteractor
+CrearObraInteractor ..> ObraPresentador
+CrearObraInteractor ..> IObraRepositorio
+CrearObraInteractor ..> IUsuarioRepositorio
+CrearObraInteractor ..> IAuditoriaRepositorio
+CrearObraInteractor ..> Obra
+Organizacion "1" o-- "0..*" Obra
+Organizacion "1" o-- "1..*" Usuario
+Usuario "1" *-- "0..*" RolAsignado
+Obra "1" -- "0..*" RolAsignado
+Cliente "1" -- "0..*" Obra
+Obra "1" *-- "1" ConfiguracionObra
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

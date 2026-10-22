@@ -1,0 +1,45 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-02 — Importar presupuesto y cronograma: actividades
+
+|Ingeniero de Obra|
+start
+|Ingeniero de Obra|
+:Selecciona la obra y solicita importar el\npresupuesto.;
+|Obra Studio|
+:Presenta el formulario de carga y la lista de\nversiones registradas de la obra.;
+|Ingeniero de Obra|
+:Adjunta el archivo XLSX de presupuesto y\ncronograma.;
+|Obra Studio|
+:Calcula el hash SHA-256 del contenido y\ncomprueba que no corresponda a una versión ya\nregistrada.;
+if (A1. ¿Archivo ya importado?) then (sí)
+  :El hash coincide con una versión existente; el\nsistema no crea una versión nueva y refiere la\nversión que corresponde a ese archivo.;
+  stop
+else (no)
+endif
+|Ingeniero de Obra|
+:Confirma la carga.;
+|Obra Studio|
+:Identifica hojas y columnas, reconoce rubros,\nsubrubros e ítems, conserva el archivo\noriginal sin modificarlo y recalcula los\ntotales.;
+|Ingeniero de Obra|
+:Revisa la estructura reconocida y la\ncomparación de totales.;
+|Obra Studio|
+:Muestra el total declarado y el total\nrecalculado por rubro y general, y señala cada\ndato obligatorio inválido indicando hoja, fila\ny columna.;
+if (A2. ¿Diferencia entre el total\ndeclarado y el recalculado?) then (sí)
+  :El sistema exige confirmación explícita; sin\nconfirmación descarta la importación y no\nregistra versión.;
+else (no)
+endif
+|Ingeniero de Obra|
+:Confirma la importación.;
+|Obra Studio|
+:Registra una versión de presupuesto nueva en\nestado Propuesta con su archivo de origen y su\ninforme de importación, pendiente de\nactivación.;
+note right
+  En cualquier paso:
+  E1 (RF-03). Dato obligatorio inválido
+  E2 (RNF-01). El actor no tiene rol vigente sobre la obra
+  E3. Operación interrumpida
+end note
+stop
+@enduml

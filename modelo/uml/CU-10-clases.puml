@@ -1,0 +1,71 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-10 — Derivar documento financiero en ERP
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class DocumentoFinancieroControlador <<Boundary>> {
+    +certificadoEmitido(certificadoId, tipo, monto)
+    +registrarCobro(documentoId)
+    +aprobarPago(documentoId)
+    +ejecutarPago(documentoId)
+  }
+  class DocumentoFinancieroPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class DerivarDocumentoInteractor <<Control>> {
+    +derivar(certificadoId, tipo, monto)
+    +cobrar(documentoId, actorId)
+    +aprobarPago(documentoId, actorId)
+    +ejecutarPago(documentoId, actorId)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class DocumentoFinancieroERP <<Entity>> {
+  +id : UUID
+  -tipo : String
+  -numero : String
+  -fecha : Date
+  -...
+    --
+    +crear(tipo, numero, fecha, monto, estado = Registrado)
+    +registrarCobro(fecha)
+    +aprobarPago(fecha)
+    +pagar(fecha)
+  }
+  class Certificado <<Entity>> {
+  +id : UUID
+  -numero : String
+  -tipo : String
+  -fechaEmision : Date
+  -...
+  }
+  interface IDocumentoFinancieroRepositorio <<Interface>> {
+  +buscarPorCertificado(certificadoId)
+  +guardar(documento)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+DocumentoFinancieroControlador --> DerivarDocumentoInteractor
+DerivarDocumentoInteractor ..> DocumentoFinancieroPresentador
+DerivarDocumentoInteractor ..> IDocumentoFinancieroRepositorio
+DerivarDocumentoInteractor ..> IAuditoriaRepositorio
+DerivarDocumentoInteractor ..> DocumentoFinancieroERP
+Certificado "1" -- "0..1" DocumentoFinancieroERP
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

@@ -1,0 +1,123 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-07 — Generar borrador de certificado
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class GenerarBorradorControlador <<Boundary>> {
+    +generarBorrador(obraId, periodoId)
+  }
+  class CertificadoPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class GenerarBorradorInteractor <<Control>> {
+    +ejecutar(periodoId, actorId)
+  }
+  class CalcularValorizacionServicio <<Control>> {
+    +calcular(lineas, configuracionObra)
+  }
+  class DetectarAlertasServicio <<Control>> {
+    +detectar(lineas, versionVigente)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Certificado <<Entity>> {
+  +id : UUID
+  -numero : String
+  -tipo : String
+  -fechaEmision : Date
+  -...
+    --
+    +crear(tipo = interno, estado = Borrador, revisión 1)
+    +agregarLinea(cantidadPeriodo, precioUnitario, medicionId)
+  }
+  class RevisionCertificado <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -fechaGeneracion : DateTime
+  -subtotal : Decimal
+  -/impuestos : Decimal
+  -/retenciones : Decimal
+  -/total : Decimal
+  }
+  class LineaCertificado <<Entity>> {
+  +id : UUID
+  -cantidadPeriodo : Decimal
+  -precioUnitario : Decimal
+  -/importe : Decimal
+  -/cantidadAcumulada : Decimal
+  }
+  class MedicionOficial <<Entity>> {
+  +id : UUID
+  -cantidad : Decimal
+  -unidad : String
+  -ejecutor : String
+  -/cantidadCertificable : Decimal
+  -...
+  }
+  class LineaPresupuesto <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -tipo : String
+  -/importe : Decimal
+  -/cantidadMedida : Decimal
+  -/saldo : Decimal
+  -...
+  }
+  class ConfiguracionObra <<Entity>> {
+  +id : UUID
+  -tasaIVA : Decimal
+  -moneda : String
+  -toleranciaDesvio : Decimal
+  }
+  class Valorizacion <<ValueObject>> {
+  -subtotal : Decimal
+  -impuestos : Decimal
+  -retenciones : Decimal
+  -...
+  }
+  interface IMedicionRepositorio <<Interface>> {
+  +listarPorPeriodo(periodoId)
+  +acumuladoAprobado(lineaId)
+  }
+  interface IPresupuestoRepositorio <<Interface>> {
+  +buscarVersionVigente(obraId)
+  }
+  interface ICertificadoRepositorio <<Interface>> {
+  +guardar(certificado)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+GenerarBorradorControlador --> GenerarBorradorInteractor
+GenerarBorradorInteractor --> CalcularValorizacionServicio
+GenerarBorradorInteractor --> DetectarAlertasServicio
+GenerarBorradorInteractor ..> CertificadoPresentador
+GenerarBorradorInteractor ..> IMedicionRepositorio
+GenerarBorradorInteractor ..> IPresupuestoRepositorio
+GenerarBorradorInteractor ..> ICertificadoRepositorio
+GenerarBorradorInteractor ..> IAuditoriaRepositorio
+GenerarBorradorInteractor ..> Certificado
+LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto
+LineaPresupuesto "1" -- "0..*" MedicionOficial
+Certificado "1" *-- "1..*" RevisionCertificado
+RevisionCertificado "1" *-- "1..*" LineaCertificado
+MedicionOficial "1" -- "0..1" LineaCertificado
+LineaPresupuesto "1" -- "0..*" LineaCertificado
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

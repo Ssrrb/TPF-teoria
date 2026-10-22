@@ -1,0 +1,93 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-13 — Consultar estado del subcontrato
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class ConsultarSubcontratoControlador <<Boundary>> {
+    +consultarContrato(subcontratoId)
+  }
+  class SubcontratoPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class ConsultarSubcontratoInteractor <<Control>> {
+    +ejecutar(subcontratoId, actorId)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Subcontrato <<Entity>> {
+  +id : UUID
+  -numero : String
+  -montoContrato : Decimal
+  -modalidad : String
+  -/montoCertificado : Decimal
+  -/saldoCertificable : Decimal
+  -...
+    --
+    +perteneceA(socioId)
+    +saldoCertificable()
+  }
+  class Socio <<Entity>> {
+  +id : UUID
+  -formaLegal : String
+  -identificador : String
+  -nombre : String
+  }
+  class Certificado <<Entity>> {
+  +id : UUID
+  -numero : String
+  -tipo : String
+  -fechaEmision : Date
+  -...
+  }
+  class MedicionOficial <<Entity>> {
+  +id : UUID
+  -cantidad : Decimal
+  -unidad : String
+  -ejecutor : String
+  -/cantidadCertificable : Decimal
+  -...
+  }
+  class Valorizacion <<ValueObject>> {
+  -subtotal : Decimal
+  -impuestos : Decimal
+  -retenciones : Decimal
+  -...
+  }
+  interface ISubcontratoRepositorio <<Interface>> {
+  +buscar(subcontratoId)
+  }
+  interface IMedicionRepositorio <<Interface>> {
+  +listarPorSubcontrato(subcontratoId)
+  }
+  interface ICertificadoRepositorio <<Interface>> {
+  +listarPorSubcontrato(subcontratoId)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+ConsultarSubcontratoControlador --> ConsultarSubcontratoInteractor
+ConsultarSubcontratoInteractor ..> SubcontratoPresentador
+ConsultarSubcontratoInteractor ..> ISubcontratoRepositorio
+ConsultarSubcontratoInteractor ..> IMedicionRepositorio
+ConsultarSubcontratoInteractor ..> ICertificadoRepositorio
+ConsultarSubcontratoInteractor ..> IAuditoriaRepositorio
+ConsultarSubcontratoInteractor ..> Subcontrato
+Subcontrato "0..1" -- "0..*" Certificado
+Socio "1" -- "0..*" Subcontrato
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

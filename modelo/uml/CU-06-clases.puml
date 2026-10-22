@@ -1,0 +1,71 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-06 — Cerrar período de medición
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class CerrarPeriodoControlador <<Boundary>> {
+    +abrirPeriodo(obraId, periodoId)
+    +cerrarPeriodo(periodoId)
+  }
+  class PeriodoPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class CerrarPeriodoInteractor <<Control>> {
+    +obtenerEstado(periodoId)
+    +ejecutar(periodoId, actorId)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Periodo <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -fechaInicio : Date
+  -fechaFin : Date
+  -...
+    --
+    +puedeCerrarse()
+    +cerrar(actorId, fecha)
+  }
+  class MedicionOficial <<Entity>> {
+  +id : UUID
+  -cantidad : Decimal
+  -unidad : String
+  -ejecutor : String
+  -/cantidadCertificable : Decimal
+  -...
+  }
+  interface IMedicionRepositorio <<Interface>> {
+  +listarPorPeriodo(periodoId)
+  +buscarPeriodo(periodoId)
+  +guardarPeriodo(periodo)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+  interface IReloj <<Interface>> {
+  +ahora()
+  }
+}
+
+CerrarPeriodoControlador --> CerrarPeriodoInteractor
+CerrarPeriodoInteractor ..> PeriodoPresentador
+CerrarPeriodoInteractor ..> IMedicionRepositorio
+CerrarPeriodoInteractor ..> IAuditoriaRepositorio
+CerrarPeriodoInteractor ..> IReloj
+CerrarPeriodoInteractor ..> Periodo
+Periodo "1" *-- "0..*" MedicionOficial
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

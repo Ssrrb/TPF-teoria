@@ -1,0 +1,19 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Estados de MedicionOficial
+
+state "Registrada" as Registrada
+Registrada : Cargada por el Ingeniero de Obra con su evidencia; espera decisión.
+state "Aprobada" as Aprobada
+Aprobada : El Responsable Técnico la validó; su cantidad cubierta es certificable.
+state "Rechazada" as Rechazada
+Rechazada : Devuelta con motivo; no integra el acumulado físico.
+
+[*] --> Registrada : (CU-04)
+Registrada --> Aprobada : aprobar\n(CU-05)
+Registrada --> Rechazada : rechazar [motivo informado]\n(CU-05)
+Rechazada --> Registrada : corregir y reenviar\n(CU-04)
+Aprobada --> [*]
+@enduml

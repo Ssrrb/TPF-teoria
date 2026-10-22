@@ -1,0 +1,35 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-16 — Consultar reportes y Curva S: actividades
+
+|Administrador|
+start
+|Administrador|
+:Selecciona la obra y la fecha de corte.;
+|Obra Studio|
+:Comprueba que la obra pertenezca a la\norganización del actor.;
+if (E1. ¿Obra de otra organización?) then (sí)
+  :La obra no pertenece a la organización del\nactor; el sistema no muestra sus datos.;
+  end
+else (no)
+endif
+|Administrador|
+:Solicita la Curva S.;
+|Obra Studio|
+:Calcula a la misma fecha de corte las series\nde avance físico, avance financiero y físico\npendiente de movimiento vigente, y explica\nunidad y ponderación.;
+|Administrador|
+:Solicita el resumen por rubro.;
+|Obra Studio|
+:Muestra presupuesto vigente, costos propios y\nsubcontratados, certificaciones y saldos por\nobra y rubro, cada total con fecha de corte,\nunidad, moneda y procedencia.;
+|Administrador|
+:Selecciona una cifra.;
+|Obra Studio|
+:Presenta el registro o el documento fuente que\nla respalda.;
+note right
+  En cualquier paso:
+  E2 (RNF-01). El actor no tiene rol vigente sobre la obra
+end note
+stop
+@enduml

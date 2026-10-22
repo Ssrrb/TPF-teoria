@@ -1,0 +1,26 @@
+@startuml
+top to bottom direction
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam nodesep 30
+skinparam ranksep 60
+title Generalización de Actores
+
+actor "Usuario de Obra" as USR <<abstracto>>
+actor "Motor de Obra Studio" as MOT <<abstracto>>
+actor "Ingeniero de Obra" as ING
+actor "Responsable Técnico" as SUP
+actor "Administrador" as ADM
+actor "Subcontratista" as SUB
+actor "Cliente" as CLI
+actor "Motor de Ingeniería" as ECMS
+actor "Motor ERP" as ERP
+actor "Finanzas y Tesorería" as TES
+
+USR <|-- ING
+USR <|-- SUP
+USR <|-- ADM
+MOT <|-- ECMS
+MOT <|-- ERP
+@enduml

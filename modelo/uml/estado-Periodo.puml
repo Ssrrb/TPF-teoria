@@ -1,0 +1,15 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Estados de Periodo
+
+state "Abierto" as Abierto
+Abierto : Admite el registro, la corrección y la aprobación de mediciones.
+state "Cerrado" as Cerrado
+Cerrado : Todas sus mediciones están aprobadas; no admite mediciones nuevas.
+
+[*] --> Abierto
+Abierto --> Cerrado : cerrar [todas las mediciones aprobadas]\n(CU-06)
+Cerrado --> [*]
+@enduml

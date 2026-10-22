@@ -1,0 +1,31 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-13 — Consultar estado del subcontrato: actividades
+
+|Subcontratista|
+start
+|Subcontratista|
+:Ingresa y selecciona su contrato.;
+|Obra Studio|
+:Comprueba que el contrato pertenezca al socio\ndel actor y presenta su número, monto,\nmodalidad y estado.;
+if (E1. ¿Contrato ajeno?) then (sí)
+  :El contrato no pertenece al socio del actor;\nel sistema deniega la consulta y registra el\nintento.;
+  end
+else (no)
+endif
+|Subcontratista|
+:Consulta las mediciones de su trabajo.;
+|Obra Studio|
+:Lista las mediciones del contrato con ejecutor\nsubcontratado, con cantidad, período y estado.;
+|Subcontratista|
+:Consulta los certificados y las\nvalorizaciones.;
+|Obra Studio|
+:Muestra los certificados de subcontrato con su\nvalorización, el monto certificado y el saldo\ncertificable.;
+note right
+  En cualquier paso:
+  E2 (RNF-01). El actor no tiene acceso vigente
+end note
+stop
+@enduml

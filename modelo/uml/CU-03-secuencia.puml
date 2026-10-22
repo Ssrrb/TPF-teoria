@@ -1,0 +1,79 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-03 — Confirmar estructura y activar versión vigente
+
+actor "Administrador" as ADM
+participant "<<Boundary>>\nActivarVersionControlador" as CTRL
+participant "<<Control>>\nActivarVersionInteractor" as UC
+participant "<<Interface>>\nIPresupuestoRepositorio" as REP
+participant "<<Interface>>\nIReloj" as RLJ
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\npropuesta : VersionPresupuesto" as VER
+participant "<<Entity>>\nanterior : VersionPresupuesto" as ANT
+
+ADM -> CTRL : abrirVersion(versionId)
+activate CTRL
+CTRL -> UC : obtenerVersion(versionId)
+activate UC
+UC -> REP : buscarVersion(versionId)
+activate REP
+REP --> UC : VersionPresupuesto en Propuesta
+deactivate REP
+UC --> CTRL : estructura e informe de importación
+deactivate UC
+CTRL --> ADM : muestra rubros, unidades y agrupaciones
+deactivate CTRL
+alt el actor confirma la estructura (RF-05)
+  ADM -> CTRL : activarVersion(versionId)
+  activate CTRL
+  CTRL -> UC : activar(versionId, actorId)
+  activate UC
+  UC -> REP : buscarVersionVigente(obraId)
+  activate REP
+  REP --> UC : versión vigente anterior | nulo
+  deactivate REP
+  UC -> RLJ : ahora()
+  activate RLJ
+  RLJ --> UC : fecha
+  deactivate RLJ
+  UC -> VER : confirmarEstructura()
+  activate VER
+  UC -> VER : activar(fecha)
+  activate VER
+  UC -> ANT : reemplazar()
+  activate ANT
+  UC -> REP : guardarVersion(version)
+  activate REP
+  UC -> AUD : registrar(actor, fecha, obra, version, activación)
+  activate AUD
+  deactivate AUD
+  deactivate REP
+  deactivate ANT
+  deactivate VER
+  deactivate VER
+  UC --> CTRL : versionVigente(versionId)
+  deactivate UC
+  deactivate CTRL
+else el actor descarta la versión
+  ADM -> CTRL : descartarVersion(versionId)
+  activate CTRL
+  CTRL -> UC : descartar(versionId, actorId)
+  activate UC
+  UC -> VER : descartar()
+  activate VER
+  UC -> REP : guardarVersion(version)
+  activate REP
+  UC -> AUD : registrar(actor, fecha, obra, version, descarte)
+  activate AUD
+  deactivate AUD
+  deactivate REP
+  deactivate VER
+  UC --> CTRL : versionDescartada(versionId)
+  deactivate UC
+  deactivate CTRL
+end
+CTRL --> ADM : informa el estado resultante de la versión
+@enduml

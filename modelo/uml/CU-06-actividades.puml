@@ -1,0 +1,32 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-06 — Cerrar período de medición: actividades
+
+|Responsable Técnico|
+start
+|Responsable Técnico|
+:Selecciona la obra y el período a cerrar.;
+|Obra Studio|
+:Muestra las mediciones del período con su\nestado y señala las que siguen pendientes de\ndecisión.;
+|Responsable Técnico|
+:Solicita el cierre del período.;
+|Obra Studio|
+:Comprueba que todas las mediciones del período\nestén resueltas y aprobadas.;
+if (E1. ¿Mediciones sin aprobar?) then (sí)
+  :Quedan mediciones registradas o rechazadas en\nel período; el sistema no lo cierra e indica\ncuáles faltan resolver.;
+  end
+else (no)
+endif
+|Responsable Técnico|
+:Confirma el cierre.;
+|Obra Studio|
+:Registra el período como Cerrado con actor y\nfecha en una sola operación.;
+note right
+  En cualquier paso:
+  E2 (RNF-03). Operación interrumpida
+  E3 (RNF-01). El actor no tiene rol vigente sobre la obra
+end note
+stop
+@enduml

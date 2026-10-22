@@ -1,0 +1,53 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-12 — Registrar contrato de subcontrato
+
+actor "Administrador" as ADM
+participant "<<Boundary>>\nRegistrarSubcontratoControlador" as CTRL
+participant "<<Control>>\nRegistrarSubcontratoInteractor" as UC
+participant "<<Interface>>\nIPresupuestoRepositorio" as PREP
+participant "<<Interface>>\nISubcontratoRepositorio" as SREP
+participant "<<Interface>>\nIPublicadorEventos" as EVT
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nSubcontrato" as SBC
+
+ADM -> CTRL : nuevoSubcontrato(obraId)
+activate CTRL
+CTRL -> UC : prepararAlta(obraId)
+activate UC
+UC -> SREP : listarSocios(organizacionId)
+activate SREP
+SREP --> UC : socios de la organización
+deactivate SREP
+UC -> PREP : buscarVersionVigente(obraId)
+activate PREP
+PREP --> UC : rubros e ítems de la VersionPresupuesto vigente
+deactivate PREP
+UC --> CTRL : socios, rubros y precios
+deactivate UC
+CTRL --> ADM : muestra el formulario del subcontrato
+deactivate CTRL
+ADM -> CTRL : registrarSubcontrato(socioId, numero, monto, modalidad, alcance)
+activate CTRL
+CTRL -> UC : ejecutar(solicitudSubcontrato, actorId)
+activate UC
+alt el alcance pertenece a la versión vigente y el número es nuevo (RF-23)
+  UC -> SBC ** : crear(numero, montoContrato, modalidad, alcance)
+  UC -> SREP : guardar(subcontrato)
+  activate SREP
+  UC ->> EVT : publicar(SubcontratoRegistrado(subcontratoId))
+  UC -> AUD : registrar(actor, fecha, obra, subcontrato, alta)
+  activate AUD
+  deactivate AUD
+  deactivate SREP
+  UC --> CTRL : subcontratoRegistrado(subcontratoId)
+  deactivate UC
+else rubro ajeno o número repetido
+  UC --> CTRL : datosInvalidos(detalle)
+end
+CTRL --> ADM : informa el registro y su vínculo con el ERP
+deactivate CTRL
+@enduml

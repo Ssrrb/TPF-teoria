@@ -1,0 +1,31 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-08 — Corregir certificado emitido: actividades
+
+|Ingeniero de Obra|
+start
+|Ingeniero de Obra|
+:Abre el certificado emitido y solicita\ncorregirlo.;
+|Obra Studio|
+:Muestra la revisión emitida con su número,\nfecha, destinatario y archivo exportado.;
+if (E1. ¿Certificado todavía en Borrador?) then (sí)
+  :No hay revisión emitida que corregir; el\nsistema no crea una revisión y remite a editar\nel borrador.;
+  end
+else (no)
+endif
+|Ingeniero de Obra|
+:Indica el motivo y corrige las cantidades o\nlos datos.;
+|Obra Studio|
+:Crea una revisión nueva en Borrador vinculada\na la emitida y recalcula su valorización, sin\nmodificar la revisión emitida.;
+|Ingeniero de Obra|
+:Guarda la corrección.;
+|Obra Studio|
+:Deja el certificado en Borrador sobre la\nrevisión nueva, registra actor, fecha y\nmotivo, y lo habilita para una nueva emisión.;
+note right
+  En cualquier paso:
+  E2 (RNF-01). El actor no tiene rol vigente sobre la obra
+end note
+stop
+@enduml

@@ -1,0 +1,118 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam sequenceMessageAlign left
+title Caso de Uso CU-11 — Proponer y aprobar movimiento presupuestario
+
+actor "Responsable Técnico" as SUP
+actor "Administrador" as ADM
+participant "<<Boundary>>\nMovimientoControlador" as CTRL
+participant "<<Control>>\nMovimientoInteractor" as UC
+participant "<<Control>>\nEvaluarLimiteServicio" as LIM
+participant "<<Interface>>\nIAlmacenArchivos" as ALM
+participant "<<Interface>>\nIMovimientoRepositorio" as MOVREP
+participant "<<Interface>>\nIPresupuestoRepositorio" as PREP
+participant "<<Interface>>\nIAuditoriaRepositorio" as AUD
+participant "<<Entity>>\nMovimientoPresupuestario" as MOV
+participant "<<Entity>>\nnueva : VersionPresupuesto" as VER
+participant "<<Entity>>\nanterior : VersionPresupuesto" as ANT
+
+SUP -> CTRL : proponerMovimiento(obraId, objetivoId)
+activate CTRL
+CTRL -> UC : prepararPropuesta(objetivoId)
+activate UC
+UC -> PREP : buscarVersionVigente(obraId)
+activate PREP
+PREP --> UC : VersionPresupuesto vigente con el saldo del objetivo
+deactivate PREP
+UC --> CTRL : tipos de movimiento y saldo vigente
+deactivate UC
+CTRL --> SUP : muestra el formulario del movimiento
+deactivate CTRL
+SUP -> CTRL : registrarPropuesta(causa, tipo, objetivoId, cantidad, precio, motivo, respaldo)
+activate CTRL
+CTRL -> UC : proponer(solicitudMovimiento, actorId)
+activate UC
+UC -> ALM : guardar(respaldo)
+activate ALM
+ALM --> UC : ruta
+deactivate ALM
+UC -> LIM : evaluar(tipo, cantidad, precio, saldoVigente)
+activate LIM
+LIM --> UC : efecto, límite, importe utilizado y saldo
+deactivate LIM
+UC -> MOV ** : crear(tipo, motivo, montoEfecto, limite, estado = Propuesto)
+UC -> MOVREP : guardar(movimiento)
+activate MOVREP
+deactivate MOVREP
+UC --> CTRL : movimientoPropuesto(movimientoId)
+deactivate UC
+CTRL --> SUP : informa el movimiento propuesto
+deactivate CTRL
+ADM -> CTRL : aprobarInterno(movimientoId)
+activate CTRL
+CTRL -> UC : aprobarInterno(movimientoId, actorId)
+activate UC
+UC -> MOVREP : buscar(movimientoId)
+activate MOVREP
+MOVREP --> UC : MovimientoPresupuestario Propuesto
+deactivate MOVREP
+alt datos completos y dentro del límite (RF-20)
+  UC -> MOV : aprobarInterno(actorId, fecha)
+  activate MOV
+  UC -> MOVREP : guardar(movimiento)
+  activate MOVREP
+  deactivate MOVREP
+  deactivate MOV
+  UC --> CTRL : aprobacionInternaRegistrada()
+  deactivate UC
+else datos incompletos o exceso sin excepción registrada
+  UC --> CTRL : aprobacionImpedida(motivos)
+end
+ADM -> CTRL : registrarAprobacionContractual(movimientoId, respaldoCliente)
+activate CTRL
+CTRL -> UC : aprobarContractual(movimientoId, actorId)
+activate UC
+UC -> MOV : aprobarContractual(actorId, fecha, respaldoCliente)
+activate MOV
+UC -> MOVREP : guardar(movimiento)
+activate MOVREP
+deactivate MOVREP
+deactivate MOV
+UC --> CTRL : aprobacionContractualRegistrada()
+deactivate UC
+ADM -> CTRL : activarMovimiento(movimientoId)
+activate CTRL
+CTRL -> UC : activar(movimientoId, actorId)
+activate UC
+UC -> VER ** : crear(numero siguiente, líneas con el movimiento)
+UC -> VER : activar(fecha)
+activate VER
+UC -> ANT : reemplazar()
+activate ANT
+UC -> MOV : activar(versionId)
+activate MOV
+UC -> MOV : cubrirPropuestasPendientes()
+activate MOV
+MOV --> UC : PropuestaPendiente cubiertas, certificables (RF-22)
+deactivate MOV
+UC -> PREP : guardarVersion(version)
+activate PREP
+UC -> MOVREP : guardar(movimiento)
+activate MOVREP
+UC -> AUD : registrar(actor, fecha, obra, version, movimiento)
+activate AUD
+deactivate AUD
+deactivate MOVREP
+deactivate PREP
+deactivate MOV
+deactivate ANT
+deactivate VER
+UC --> CTRL : versionVigente(versionId)
+deactivate UC
+CTRL --> ADM : informa la versión nueva vigente
+deactivate CTRL
+deactivate CTRL
+deactivate CTRL
+@enduml

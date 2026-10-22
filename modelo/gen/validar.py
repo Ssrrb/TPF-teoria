@@ -66,6 +66,24 @@ for aid in actores:
     if aid not in usados:
         err(f"El actor '{aid}' ({actores[aid]['nombre']}) no participa en ningún caso de uso.")
 
+# 5b. Generalización de actores: padres abstractos, sin casos propios, un padre por hijo
+padre_de = {}
+for g in M.get("generalizacion_actores", []):
+    if g["id"] in actores:
+        err(f"generalizacion_actores: '{g['id']}' ya es un actor concreto; el padre debe ser abstracto.")
+    if g["nombre"] in {a["nombre"] for a in actores.values()}:
+        err(f"generalizacion_actores: el nombre '{g['nombre']}' ya lo usa un actor concreto.")
+    if not g.get("hijos"):
+        err(f"generalizacion_actores[{g['id']}]: sin hijos.")
+    for h in g.get("hijos", []):
+        if h not in actores:
+            err(f"generalizacion_actores[{g['id']}]: el hijo '{h}' no es un actor.")
+        if h in padre_de:
+            err(f"generalizacion_actores: '{h}' tiene dos padres ({padre_de[h]} y {g['id']}).")
+        padre_de[h] = g["id"]
+    if any(g["id"] in c["actores"] for c in M["casos_uso"]):
+        err(f"generalizacion_actores[{g['id']}]: un padre abstracto no participa en casos de uso; sus hijos los heredarían.")
+
 # 6. Relaciones entre casos de uso ----------------------------------------------
 for rel in M["relaciones_cu"]:
     for extremo in ("origen", "destino"):
@@ -78,8 +96,10 @@ for rel in M["relaciones_cu"]:
 
 # 7/8. Casos de uso detallados ---------------------------------------------------
 detallados = [c for c in M["casos_uso"] if c.get("detallado")]
-if len(detallados) != 3:
-    avi(f"La plantilla tiene 3 secciones de caso de uso; hay {len(detallados)} detallados.")
+# la plantilla pide Descripción, Modelo Estructural y Modelo Dinámico para cada caso de uso
+for c in M["casos_uso"]:
+    if not c.get("detallado"):
+        avi(f"{c['id']} no está detallado: su sección queda sin ficha completa, clases ni secuencia.")
 for c in detallados:
     cid = c["id"]
     for campo in ("descripcion", "precondiciones", "poscondiciones", "flujo", "excepciones",
@@ -100,6 +120,10 @@ for c in detallados:
             err(f"{cid} {e.get('id')}: cita {r}, que no está marcado para {cid} en la matriz.")
         if "paso" in e and not 1 <= e["paso"] <= len(c.get("flujo") or []):
             err(f"{cid} {e.get('id')}: el paso {e['paso']} no existe en el flujo normal.")
+        if "continua" in e and e not in (c.get("alternativos") or []):
+            err(f"{cid} {e.get('id')}: 'continua' solo vale en un flujo alternativo; una excepción termina el caso.")
+        if e.get("continua") and "paso" not in e:
+            err(f"{cid} {e.get('id')}: 'continua' necesita el 'paso' donde se bifurca.")
     # el caso detallado debe declarar sus clases
     if cid not in M["clases_cu"]:
         err(f"{cid} detallado sin entrada en clases_cu.")
@@ -173,6 +197,17 @@ for ent, maq in M["estados"].items():
             if t[extremo] not in nombres:
                 err(f"estados[{ent}]: transición hacia estado inexistente '{t[extremo]}'.")
         alcanzables.add(t["a"])
+        # toda transición pertenece a un caso de uso (checklist semántico, punto 3)
+        cus_t = t.get("cu") or []
+        cus_t = [cus_t] if isinstance(cus_t, str) else cus_t
+        if not cus_t:
+            err(f"estados[{ent}] {t['de']} -> {t['a']}: la transición no declara el caso de uso que la dispara.")
+        for cu in cus_t:
+            if cu not in casos:
+                err(f"estados[{ent}] {t['de']} -> {t['a']}: el caso de uso {cu} no existe.")
+    for cu in maq.get("creado_en", []):
+        if cu not in casos:
+            err(f"estados[{ent}].creado_en: el caso de uso {cu} no existe.")
     for n in nombres - alcanzables:
         err(f"estados[{ent}]: el estado '{n}' es inalcanzable.")
     # la entidad debe tener un atributo 'estado' que lo soporte

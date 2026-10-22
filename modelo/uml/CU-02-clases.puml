@@ -1,0 +1,117 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-02 — Importar presupuesto y cronograma
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class ImportarPresupuestoControlador <<Boundary>> {
+    +importarPresupuesto(obraId, archivo)
+    +confirmarImportacion(solicitudId)
+  }
+  class ImportacionPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class ImportarPresupuestoInteractor <<Control>> {
+    +ejecutar(solicitudImportacion)
+    +confirmar(solicitudId)
+  }
+  class ValidarEstructuraServicio <<Control>> {
+    +validar(lineas)
+  }
+  class ContrastarTotalesServicio <<Control>> {
+    +contrastar(totalDeclarado, totalRecalculado)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Obra <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -nombre : String
+  -direccion : String
+  -...
+  }
+  class Presupuesto <<Entity>> {
+  +id : UUID
+  -tipo : String
+  -moneda : String
+  }
+  class VersionPresupuesto <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -estado : String
+  -fechaActivacion : DateTime
+  -/montoContractual : Decimal
+    --
+    +crear(numero, estado = Propuesta)
+  }
+  class LineaPresupuesto <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -tipo : String
+  -/importe : Decimal
+  -/cantidadMedida : Decimal
+  -/saldo : Decimal
+  -...
+    --
+    +crear(codigo, unidad, cantidad, precioUnitario)
+  }
+  class ArchivoOrigen <<Entity>> {
+  +id : UUID
+  -nombre : String
+  -hashSHA256 : String
+  -ruta : String
+  -...
+  }
+  class InformeImportacion <<Entity>> {
+  +id : UUID
+  -totalDeclarado : Decimal
+  -totalRecalculado : Decimal
+  -tolerancia : Decimal
+  -/diferencia : Decimal
+  -...
+  }
+  interface IPresupuestoRepositorio <<Interface>> {
+  +buscarPorHash(hash)
+  +guardarVersion(version)
+  }
+  interface IAlmacenArchivos <<Interface>> {
+  +guardar(archivo)
+  }
+  interface ILectorPlanilla <<Interface>> {
+  +leer(archivo)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+ImportarPresupuestoControlador --> ImportarPresupuestoInteractor
+ImportarPresupuestoInteractor --> ValidarEstructuraServicio
+ImportarPresupuestoInteractor --> ContrastarTotalesServicio
+ImportarPresupuestoInteractor ..> ImportacionPresentador
+ImportarPresupuestoInteractor ..> IPresupuestoRepositorio
+ImportarPresupuestoInteractor ..> IAlmacenArchivos
+ImportarPresupuestoInteractor ..> ILectorPlanilla
+ImportarPresupuestoInteractor ..> IAuditoriaRepositorio
+ImportarPresupuestoInteractor ..> Obra
+Obra "1" *-- "1..*" Presupuesto
+Presupuesto "1" *-- "1..*" VersionPresupuesto
+VersionPresupuesto "1" *-- "1..*" LineaPresupuesto
+LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto
+VersionPresupuesto "1" *-- "0..1" ArchivoOrigen
+VersionPresupuesto "1" *-- "0..1" InformeImportacion
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

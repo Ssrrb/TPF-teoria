@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Dynamic>
+LAYOUT_WITH_LEGEND()
+title CU-12 — Registrar contrato de subcontrato
+
+Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
+Component(RegistrarSubcontratoControlador, "RegistrarSubcontratoControlador", "Controller / Presenter")
+Component(RegistrarSubcontratoInteractor, "RegistrarSubcontratoInteractor", "Interactor")
+Component(Subcontrato, "Subcontrato", "Entidad de dominio")
+Component(IAuditoriaRepositorio, "IAuditoriaRepositorio", "Interfaz")
+Component(IPresupuestoRepositorio, "IPresupuestoRepositorio", "Interfaz")
+Component(IPublicadorEventos, "IPublicadorEventos", "Interfaz")
+Component(ISubcontratoRepositorio, "ISubcontratoRepositorio", "Interfaz")
+
+Rel(web, RegistrarSubcontratoControlador, "1. nuevoSubcontrato(obraId)")
+Rel(RegistrarSubcontratoControlador, RegistrarSubcontratoInteractor, "2. prepararAlta(obraId)")
+Rel(RegistrarSubcontratoInteractor, ISubcontratoRepositorio, "3. listarSocios(organizacionId)")
+Rel(RegistrarSubcontratoInteractor, IPresupuestoRepositorio, "4. buscarVersionVigente(obraId)")
+Rel(web, RegistrarSubcontratoControlador, "5. registrarSubcontrato(socioId, numero, monto, modalidad, alcance)")
+Rel(RegistrarSubcontratoControlador, RegistrarSubcontratoInteractor, "6. ejecutar(solicitudSubcontrato, actorId)")
+Rel(RegistrarSubcontratoInteractor, Subcontrato, "7. crear(numero, montoContrato, modalidad, alcance)")
+Rel(RegistrarSubcontratoInteractor, ISubcontratoRepositorio, "8. guardar(subcontrato)")
+Rel(RegistrarSubcontratoInteractor, IPublicadorEventos, "9. publicar(SubcontratoRegistrado(subcontratoId))")
+Rel(RegistrarSubcontratoInteractor, IAuditoriaRepositorio, "10. registrar(actor, fecha, obra, subcontrato, alta)")
+@enduml

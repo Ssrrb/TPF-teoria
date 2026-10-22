@@ -1,0 +1,47 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+title Caso de Uso CU-07 — Generar borrador de certificado: actividades
+
+|Ingeniero de Obra|
+start
+|Ingeniero de Obra|
+:Selecciona la obra y el período a certificar.;
+|Obra Studio|
+:Reúne las mediciones aprobadas del período y\naparta las que no tienen saldo en la versión\nvigente.;
+if (E1. ¿Sin mediciones elegibles?) then (sí)
+  :El período no tiene mediciones aprobadas con\nsaldo en la versión vigente; el sistema no\ngenera el borrador.;
+  end
+else (no)
+endif
+if (A1. ¿Cantidad pendiente ya cubierta?) then (sí)
+  :Un movimiento presupuestario aprobado cubrió\nuna propuesta pendiente; el sistema la\nincorpora como certificable según la versión\nvigente que refleja el movimiento.;
+else (no)
+endif
+|Ingeniero de Obra|
+:Solicita generar el borrador.;
+|Obra Studio|
+:Crea el certificado en Borrador con una línea\npor ítem: cantidad certificable del período,\ncantidad aprobada acumulada y saldo de la\nversión vigente.;
+|Ingeniero de Obra|
+:Revisa la valorización del borrador.;
+|Obra Studio|
+:Calcula con aritmética decimal y en guaraníes\nel subtotal con el precio de venta vigente,\nlos impuestos y las retenciones de los fondos\nsegún la configuración de la obra.;
+|Ingeniero de Obra|
+:Revisa las alertas del borrador.;
+|Obra Studio|
+:Señala excesos, mediciones faltantes, precios\nsin movimiento vigente y diferencias de\ntotales, cada una con su rubro o ítem y su\ndato de origen.;
+if (A2. ¿Asistencia de IA?) then (sí)
+  :El actor pide redactar o explicar una alerta;\nel sistema muestra la sugerencia como no\nverificada y los importes siguen saliendo del\ncálculo determinista.;
+else (no)
+endif
+|Ingeniero de Obra|
+:Guarda el borrador.;
+|Obra Studio|
+:Conserva la revisión con actor, fecha, versión\nde presupuesto y mediciones usadas, lista para\nsu emisión en CU-09.;
+note right
+  En cualquier paso:
+  E2 (RNF-01). El actor no tiene rol vigente sobre la obra
+end note
+stop
+@enduml

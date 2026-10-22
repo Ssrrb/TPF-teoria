@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title CU-11 — Proponer y aprobar movimiento presupuestario: contenedores
+
+Person(ADM, "Administrador", "Gerente de la obra.")
+Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
+Person(CLI, "Cliente", "Comitente de la obra.")
+System_Boundary(obra, "Obra Studio") {
+  Container(web, "Aplicación Web", "React + TypeScript", "Formularios del caso de uso.")
+  Container(ecms, "Motor ECMS", "TypeScript", "Reglas del caso de uso.")
+  ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")
+  ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas, evidencias y certificados exportados.")
+}
+
+Rel(ADM, web, "Proponer y aprobar movimiento presupuestario", "HTTPS")
+Rel(SUP, web, "Proponer y aprobar movimiento presupuestario", "HTTPS")
+Rel(CLI, web, "Proponer y aprobar movimiento presupuestario", "HTTPS")
+Rel(web, ecms, "Invoca el caso de uso", "HTTPS/JSON")
+Rel(ecms, bd, "Lee y escribe", "SQL")
+Rel(ecms, archivos, "Conserva archivos", "API de objetos")
+@enduml

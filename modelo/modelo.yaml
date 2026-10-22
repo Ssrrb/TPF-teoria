@@ -131,6 +131,24 @@ actores:
       derivados de un certificado emitido.
 
 # ------------------------------------------------------------------------------
+# GENERALIZACIÓN DE ACTORES. Padres abstractos: agrupan el acceso común y no tienen casos de uso
+# propios, porque el hijo heredaría todos los del padre (D-20). hijos: ids de actores.
+# ------------------------------------------------------------------------------
+generalizacion_actores:
+  - id: USR
+    nombre: Usuario de Obra
+    descripcion: >-
+      Usuario interno con rol vigente sobre la obra. Agrupa el acceso común que exige RNF-01:
+      organización, pertenencia a la obra y rol se comprueban antes de leer o modificar información.
+    hijos: [ING, SUP, ADM]
+  - id: MOT
+    nombre: Motor de Obra Studio
+    descripcion: >-
+      Proceso que un motor de Obra Studio ejecuta sin intervención de un usuario: el cálculo por
+      vía, la publicación del certificado emitido y la derivación del documento financiero (D-15).
+    hijos: [ECMS, ERP]
+
+# ------------------------------------------------------------------------------
 # REQUISITOS. 48 identificadores: RF-01..28, RNF-01..12, PR-01..08.
 # casos_uso[] es la trazabilidad; de aquí sale la matriz. No duplicar en prosa.
 # ------------------------------------------------------------------------------
@@ -530,7 +548,9 @@ requisitos:
     casos_uso: [CU-07, CU-09, CU-11]
 
 # ------------------------------------------------------------------------------
-# CASOS DE USO. detallado:true => genera especificación + clases + secuencia.
+# CASOS DE USO. detallado:true => genera especificación + clases + secuencia + actividades.
+# alternativos/excepciones: paso = paso del flujo tras cuya respuesta se bifurca;
+# continua:true (solo alternativos) = el camino vuelve al flujo normal; sin él, termina el caso.
 # relaciones: include (base -> incluido) / extend (extensor -> base)
 # ------------------------------------------------------------------------------
 casos_uso:
@@ -538,7 +558,31 @@ casos_uso:
     nombre: Crear obra y asignar responsables
     subsistema: A
     actores: [ADM]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Administrador crea una obra dentro de su organización con sus datos identificatorios y su
+      comitente, y le asigna responsables entre los miembros de la organización, cada uno con su rol.
+      El sistema registra la obra con su configuración inicial y deja a cada responsable con un rol
+      vigente sobre ella.
+    precondiciones:
+      - El actor tiene rol admin vigente en la organización.
+      - Los responsables que se asignarán son miembros de la organización.
+    poscondiciones:
+      - La obra queda registrada en la organización con código, nombre, dirección, fechas y comitente, y con su configuración inicial.
+      - Cada responsable asignado tiene un rol vigente sobre la obra desde la fecha de asignación.
+    flujo:
+      - { actor: ADM, accion: "Solicita crear una obra.", respuesta: "Presenta el formulario de datos identificatorios y la lista de miembros de la organización." }
+      - { actor: ADM, accion: "Ingresa código, nombre, dirección, fechas de inicio y fin y comitente de la obra.", respuesta: "Comprueba que ninguna otra obra de la organización use el mismo código." }
+      - { actor: ADM, accion: "Asigna los responsables y el rol de cada uno.", respuesta: "Comprueba que cada responsable sea miembro de la organización y que su rol sea uno de los roles del sistema." }
+      - { actor: ADM, accion: "Confirma la creación.", respuesta: "Registra la obra con su configuración inicial en la moneda de la organización y los roles asignados, vigentes desde la fecha, y deja registro de la operación." }
+    excepciones:
+      - { id: E1, paso: 2, texto: "Código en uso: otra obra de la organización ya usa ese código; el sistema no registra la obra y pide un código distinto." }
+      - { id: E2, paso: 3, requisito: PR-02, texto: "Responsable ajeno a la organización: el sistema rechaza la asignación, porque la obra y sus responsables pertenecen a la misma organización." }
+      - { id: E3, requisito: RNF-01, texto: "El actor no tiene rol admin vigente en la organización: el sistema deniega la operación." }
   - id: CU-02
     nombre: Importar presupuesto y cronograma
     subsistema: A
@@ -569,7 +613,7 @@ casos_uso:
       - { actor: ING, accion: "Confirma la importación.", respuesta: "Registra una versión de presupuesto nueva en estado Propuesta con su archivo de origen y su informe de importación, pendiente de activación." }
     alternativos:
       - { id: A1, paso: 2, requisito: RNF-07, texto: "Archivo ya importado: el hash coincide con una versión existente; el sistema no crea una versión nueva y refiere la versión que corresponde a ese archivo." }
-      - { id: A2, paso: 4, requisito: RF-04, texto: "Diferencia entre el total declarado y el recalculado: el sistema exige confirmación explícita; sin confirmación descarta la importación y no registra versión." }
+      - { id: A2, paso: 4, requisito: RF-04, continua: true, texto: "Diferencia entre el total declarado y el recalculado: el sistema exige confirmación explícita; sin confirmación descarta la importación y no registra versión." }
     excepciones:
       - { id: E1, requisito: RF-03, texto: "Dato obligatorio inválido: el sistema informa hoja, fila y columna, no registra versión y permite corregir el archivo y reintentar." }
       - { id: E2, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la operación y registra el intento." }
@@ -578,12 +622,61 @@ casos_uso:
     nombre: Confirmar estructura y activar versión vigente
     subsistema: A
     actores: [ADM]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Administrador revisa la estructura de una versión de presupuesto en estado Propuesta
+      (rubros, unidades y agrupaciones), la confirma y la activa como versión vigente de la obra, o
+      la descarta. Al activarla, la versión vigente anterior queda Reemplazada y consultable.
+    precondiciones:
+      - Existe una versión de presupuesto en estado Propuesta, registrada en CU-02.
+      - El actor tiene rol admin vigente sobre la obra.
+    poscondiciones:
+      - La versión queda Vigente con su fecha de activación, o Descartada si el actor no confirma su estructura.
+      - La versión vigente anterior, si existía, queda Reemplazada y consultable sin alteración.
+    flujo:
+      - { actor: ADM, accion: "Selecciona la obra y abre la versión en estado Propuesta.", respuesta: "Presenta rubros, subrubros e ítems con sus unidades y agrupaciones, junto con el informe de importación." }
+      - { actor: ADM, accion: "Revisa y confirma rubros, unidades y agrupaciones.", respuesta: "Registra la confirmación de la estructura de la versión." }
+      - { actor: ADM, accion: "Solicita activar la versión.", respuesta: "Deja la versión Vigente con su fecha de activación y pasa a Reemplazada la versión vigente anterior, en una sola operación." }
+    alternativos:
+      - { id: A1, paso: 1, requisito: RF-05, texto: "La estructura no se confirma: el actor descarta la versión; el sistema la deja Descartada y la versión vigente no cambia." }
+    excepciones:
+      - { id: E1, requisito: RNF-01, texto: "El actor no tiene rol admin vigente sobre la obra: el sistema deniega la activación." }
+      - { id: E2, texto: "Operación interrumpida: la versión conserva el estado Propuesta y la versión vigente anterior sigue vigente." }
   - id: CU-04
     nombre: Registrar medición oficial
     subsistema: A
     actores: [ING]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Ingeniero de Obra registra, en un período abierto, la medición oficial de un ítem del
+      presupuesto vigente con su cantidad, unidad, ejecutor propio o subcontratado y evidencia. El
+      trabajo de un subcontratista también lo mide en terreno y lo registra el Ingeniero, con
+      ejecutor subcontratado, en la misma y única medición del ítem y período.
+    precondiciones:
+      - La obra tiene una versión de presupuesto vigente.
+      - El período de medición está Abierto.
+      - El actor tiene un rol vigente sobre la obra.
+    poscondiciones:
+      - Queda una única medición oficial del ítem en el período, en estado Registrada, con cantidad, unidad, ejecutor, evidencia, actor, fecha y versión de presupuesto.
+      - El acumulado físico del ítem no cambia hasta que la medición se apruebe en CU-05.
+    flujo:
+      - { actor: ING, accion: "Selecciona la obra, el período abierto y el ítem a medir.", respuesta: "Presenta el formulario de medición, apto para teléfono, con la unidad del ítem, la cantidad aprobada acumulada y el saldo de la versión vigente." }
+      - { actor: ING, accion: "Ingresa la cantidad medida, indica si el ejecutor es propio o subcontratado y adjunta la evidencia.", respuesta: "Identifica los campos requeridos y comprueba que no exista otra medición del mismo ítem en el período." }
+      - { actor: ING, accion: "Confirma el registro.", respuesta: "Conserva la evidencia y registra la medición en estado Registrada con actor, fecha y versión de presupuesto, pendiente de aprobación." }
+    alternativos:
+      - { id: A1, paso: 2, requisito: RF-10, continua: true, texto: "Medición rechazada del ítem en el período: el sistema la presenta para corregir su cantidad o su evidencia y reenviarla, sin crear una medición nueva." }
+    excepciones:
+      - { id: E1, paso: 2, requisito: RF-10, texto: "El ítem ya tiene una medición registrada o aprobada en el período: el sistema no crea otra, para no contabilizar dos veces el mismo trabajo físico." }
+      - { id: E2, paso: 2, requisito: RNF-09, texto: "Dato requerido faltante o inválido: el sistema señala el campo con un mensaje identificable y no registra la medición hasta que se corrija." }
+      - { id: E3, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega el registro." }
   - id: CU-05
     nombre: Aprobar o rechazar medición oficial
     subsistema: A
@@ -612,7 +705,7 @@ casos_uso:
       - { actor: SUP, accion: "Confirma la decisión.", respuesta: "Registra la medición como aprobada con decisión, actor, fecha y versión, e incrementa el acumulado físico una sola vez." }
       - { actor: SUP, accion: "Repite la revisión para las mediciones restantes del período.", respuesta: "Actualiza el estado del período y habilita su cierre cuando no quedan mediciones pendientes." }
     alternativos:
-      - { id: A1, paso: 3, requisito: RF-09, texto: "La cantidad supera el saldo del presupuesto vigente: el sistema aprueba solo la parte cubierta y registra el exceso como propuesta pendiente, que no integra la medición oficial certificable hasta que un movimiento aprobado la cubra. Punto de extensión: CU-11, donde el sobrecosto se clasifica como adenda, cubierta por un movimiento presupuestario, o por otra causa (retrabajo, atraso, fallo o cambio)." }
+      - { id: A1, paso: 3, requisito: RF-09, continua: true, texto: "La cantidad supera el saldo del presupuesto vigente: el sistema aprueba solo la parte cubierta y registra el exceso como propuesta pendiente, que no integra la medición oficial certificable hasta que un movimiento aprobado la cubra. Punto de extensión: CU-11, donde el sobrecosto se clasifica como adenda, cubierta por un movimiento presupuestario, o por otra causa (retrabajo, atraso, fallo o cambio)." }
       - { id: A2, paso: 3, requisito: RF-08, texto: "Rechazo: el actor indica el motivo; el sistema registra la medición como rechazada con decisión, actor y fecha, y la devuelve al Ingeniero de Obra." }
     excepciones:
       - { id: E1, requisito: RNF-01, texto: "El actor carece de rol vigente sobre la obra: el sistema deniega la aprobación." }
@@ -621,17 +714,90 @@ casos_uso:
     nombre: Cerrar período de medición
     subsistema: A
     actores: [SUP]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Responsable Técnico cierra el período de medición de una obra cuando todas sus mediciones
+      están resueltas y aprobadas. El cierre es atómico: el período queda cerrado por completo o
+      conserva su estado anterior.
+    precondiciones:
+      - El período está Abierto.
+      - El actor tiene un rol vigente sobre la obra.
+    poscondiciones:
+      - El período queda Cerrado y ya no admite mediciones nuevas; el cierre registra actor y fecha.
+      - Ninguna medición del período queda pendiente de decisión.
+    flujo:
+      - { actor: SUP, accion: "Selecciona la obra y el período a cerrar.", respuesta: "Muestra las mediciones del período con su estado y señala las que siguen pendientes de decisión." }
+      - { actor: SUP, accion: "Solicita el cierre del período.", respuesta: "Comprueba que todas las mediciones del período estén resueltas y aprobadas." }
+      - { actor: SUP, accion: "Confirma el cierre.", respuesta: "Registra el período como Cerrado con actor y fecha en una sola operación." }
+    excepciones:
+      - { id: E1, paso: 2, requisito: RF-11, texto: "Mediciones sin aprobar: quedan mediciones registradas o rechazadas en el período; el sistema no lo cierra e indica cuáles faltan resolver." }
+      - { id: E2, requisito: RNF-03, texto: "Operación interrumpida: el período no queda parcialmente cerrado y conserva su estado Abierto." }
+      - { id: E3, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega el cierre." }
   - id: CU-07
     nombre: Generar borrador de certificado
     subsistema: B
     actores: [ING]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Ingeniero de Obra genera el borrador del certificado de avance de un período a partir de
+      las mediciones aprobadas y elegibles según el presupuesto vigente. El sistema calcula la
+      valorización con la cantidad certificable y el precio de venta vigente, aplica impuestos y
+      fondos según la configuración de la obra, muestra cantidades del período, acumuladas y
+      saldos, y señala las alertas del borrador.
+    precondiciones:
+      - Existen mediciones oficiales aprobadas en el período.
+      - La obra tiene una versión de presupuesto vigente y su configuración de impuestos y fondos.
+      - El actor tiene un rol vigente sobre la obra.
+    poscondiciones:
+      - Queda un certificado en Borrador con una revisión que conserva cantidades certificables, valorización y alertas, y el vínculo con las mediciones y la versión usadas.
+      - Las cantidades sin aprobación, sin saldo o pendientes de movimiento no integran el borrador.
+    flujo:
+      - { actor: ING, accion: "Selecciona la obra y el período a certificar.", respuesta: "Reúne las mediciones aprobadas del período y aparta las que no tienen saldo en la versión vigente." }
+      - { actor: ING, accion: "Solicita generar el borrador.", respuesta: "Crea el certificado en Borrador con una línea por ítem: cantidad certificable del período, cantidad aprobada acumulada y saldo de la versión vigente." }
+      - { actor: ING, accion: "Revisa la valorización del borrador.", respuesta: "Calcula con aritmética decimal y en guaraníes el subtotal con el precio de venta vigente, los impuestos y las retenciones de los fondos según la configuración de la obra." }
+      - { actor: ING, accion: "Revisa las alertas del borrador.", respuesta: "Señala excesos, mediciones faltantes, precios sin movimiento vigente y diferencias de totales, cada una con su rubro o ítem y su dato de origen." }
+      - { actor: ING, accion: "Guarda el borrador.", respuesta: "Conserva la revisión con actor, fecha, versión de presupuesto y mediciones usadas, lista para su emisión en CU-09." }
+    alternativos:
+      - { id: A1, paso: 1, requisito: RF-22, continua: true, texto: "Cantidad pendiente ya cubierta: un movimiento presupuestario aprobado cubrió una propuesta pendiente; el sistema la incorpora como certificable según la versión vigente que refleja el movimiento." }
+      - { id: A2, paso: 4, requisito: PR-08, continua: true, texto: "Asistencia de IA: el actor pide redactar o explicar una alerta; el sistema muestra la sugerencia como no verificada y los importes siguen saliendo del cálculo determinista." }
+    excepciones:
+      - { id: E1, paso: 1, requisito: RF-12, texto: "Sin mediciones elegibles: el período no tiene mediciones aprobadas con saldo en la versión vigente; el sistema no genera el borrador." }
+      - { id: E2, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la generación." }
   - id: CU-08
     nombre: Corregir certificado emitido
     subsistema: B
     actores: [ING]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Ingeniero de Obra corrige un certificado emitido. El sistema crea una revisión nueva en
+      Borrador vinculada a la emitida, que se conserva consultable sin alteración, y el certificado
+      vuelve a Borrador hasta que se emita la revisión nueva en CU-09.
+    precondiciones:
+      - El certificado está Emitido.
+      - El actor tiene un rol vigente sobre la obra.
+    poscondiciones:
+      - Existe una revisión nueva en Borrador, numerada a continuación de la anterior y vinculada a ella.
+      - La revisión emitida anterior y su archivo exportado permanecen consultables sin alteración.
+      - El certificado queda en Borrador hasta que se emita la revisión nueva.
+    flujo:
+      - { actor: ING, accion: "Abre el certificado emitido y solicita corregirlo.", respuesta: "Muestra la revisión emitida con su número, fecha, destinatario y archivo exportado." }
+      - { actor: ING, accion: "Indica el motivo y corrige las cantidades o los datos.", respuesta: "Crea una revisión nueva en Borrador vinculada a la emitida y recalcula su valorización, sin modificar la revisión emitida." }
+      - { actor: ING, accion: "Guarda la corrección.", respuesta: "Deja el certificado en Borrador sobre la revisión nueva, registra actor, fecha y motivo, y lo habilita para una nueva emisión." }
+    excepciones:
+      - { id: E1, paso: 1, requisito: RF-16, texto: "Certificado todavía en Borrador: no hay revisión emitida que corregir; el sistema no crea una revisión y remite a editar el borrador." }
+      - { id: E2, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la corrección." }
   - id: CU-09
     nombre: Emitir certificado de avance
     subsistema: B
@@ -665,37 +831,212 @@ casos_uso:
     nombre: Derivar documento financiero en ERP
     subsistema: B
     actores: [ECMS, ERP, TES, CLI]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      Incluido por CU-09 y CU-14. Al recibir el evento de certificado emitido que publica el Motor
+      de Ingeniería, el Motor ERP registra el documento financiero derivado (factura al Cliente si
+      el certificado es interno, pago al Subcontratista si es de subcontrato), lo vincula al
+      certificado sin duplicarlo y lo refleja en el avance físico-financiero de la obra. Finanzas y
+      Tesorería registra el cobro de la factura o aprueba y ejecuta el pago.
+    precondiciones:
+      - Existe un certificado Emitido cuyo evento fue publicado en CU-09 o CU-14.
+      - Finanzas y Tesorería opera con rol miembro ERP vigente.
+    poscondiciones:
+      - Queda un documento financiero Registrado y vinculado al certificado, sin duplicarlo.
+      - La factura llega a Cobrado cuando se registra el cobro; el pago llega a Pagado cuando se ejecuta.
+    flujo:
+      - { actor: ECMS, accion: "Publica el evento de certificado emitido.", respuesta: "Recibe el evento y comprueba que el certificado no tenga un documento financiero vinculado." }
+      - { actor: ERP, accion: "Deriva el documento según el tipo de certificado.", respuesta: "Registra la factura al Cliente o el pago al Subcontratista con número, fecha y monto, vinculado al certificado, y entrega la factura al Cliente." }
+      - { actor: ERP, accion: "Refleja el certificado en el avance físico-financiero.", respuesta: "Actualiza el avance de la obra con fecha de corte, unidad, moneda y procedencia de cada total." }
+      - { actor: TES, accion: "Registra el cobro de la factura.", respuesta: "Deja la factura Cobrada con actor y fecha, vinculada a su certificado." }
+    alternativos:
+      - { id: A1, paso: 1, requisito: RF-14, texto: "Certificado ya derivado: el certificado ya tiene un documento financiero vinculado; el sistema no registra otro y refiere el existente." }
+      - { id: A2, paso: 3, requisito: PR-06, texto: "Pago al subcontratista: Finanzas y Tesorería aprueba el pago y luego lo ejecuta; el sistema lo deja Aprobado y después Pagado, vinculado al certificado de subcontrato." }
+    excepciones:
+      - { id: E1, requisito: RNF-01, texto: "Finanzas y Tesorería no tiene rol miembro ERP vigente: el sistema deniega el registro del cobro o del pago." }
   - id: CU-11
     nombre: Proponer y aprobar movimiento presupuestario
     subsistema: A
     actores: [ADM, SUP, CLI]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      Extiende CU-05 cuando la cantidad medida excede el saldo. El Responsable Técnico clasifica la
+      causa del sobrecosto y, si es una adenda, propone un movimiento presupuestario (ampliación,
+      deducción o variación de precio) sobre rubros o ítems, con motivo y respaldo. El Administrador
+      lo aprueba internamente y registra la aceptación contractual del Cliente; solo con ambas
+      aprobaciones el sistema genera una versión de presupuesto nueva y vigente, conserva la
+      anterior y deja certificables las propuestas pendientes que el movimiento cubre.
+    precondiciones:
+      - La obra tiene una versión de presupuesto vigente.
+      - El actor tiene un rol vigente sobre la obra.
+    poscondiciones:
+      - El movimiento queda registrado con tipo, objetivo, motivo, respaldo, efecto monetario, límite, importe utilizado y saldo, y con cada aprobación por separado.
+      - Solo con la aprobación interna y la contractual el movimiento queda Vigente; la versión de presupuesto nueva rige y la anterior queda Reemplazada y consultable.
+      - Las propuestas pendientes que el movimiento cubre quedan certificables en el siguiente borrador (CU-07).
+    flujo:
+      - { actor: SUP, accion: "Selecciona la propuesta pendiente o el rubro o ítem y solicita proponer un movimiento.", respuesta: "Presenta los tipos ampliación, deducción y variación de precio, y el saldo vigente del objetivo." }
+      - { actor: SUP, accion: "Clasifica la causa como adenda, indica tipo, objetivo, cantidad o precio y motivo, y adjunta el respaldo.", respuesta: "Calcula efecto monetario, límite, importe utilizado y saldo, y registra el movimiento como Propuesto." }
+      - { actor: ADM, accion: "Revisa el movimiento propuesto.", respuesta: "Comprueba que los datos estén completos y dentro del límite." }
+      - { actor: ADM, accion: "Aprueba internamente el movimiento.", respuesta: "Registra la aprobación interna con actor y fecha." }
+      - { actor: ADM, accion: "Informa la respuesta contractual del Cliente y adjunta su respaldo.", respuesta: "Conserva el respaldo y pide confirmar la aceptación contractual, que se registra por separado de la aprobación interna." }
+      - { actor: ADM, accion: "Confirma la aceptación contractual y solicita activar el movimiento.", respuesta: "Registra la aprobación contractual y, en una sola operación, genera la versión de presupuesto nueva que refleja el movimiento, la deja Vigente, pasa la anterior a Reemplazada y marca cubiertas las propuestas pendientes alcanzadas." }
+    alternativos:
+      - { id: A1, paso: 1, requisito: RF-09, texto: "Sobrecosto por otra causa: el actor clasifica la propuesta pendiente como retrabajo, atraso, fallo o cambio; no se propone movimiento y el excedente no se certifica." }
+      - { id: A2, paso: 3, texto: "Rechazo interno: el Administrador rechaza el movimiento con su motivo; el sistema lo deja Rechazado y el presupuesto vigente no cambia." }
+      - { id: A3, paso: 5, requisito: RF-21, texto: "El Cliente no acepta: el Administrador registra el rechazo contractual; el sistema deja el movimiento Rechazado y el presupuesto vigente no cambia." }
+    excepciones:
+      - { id: E1, paso: 3, requisito: RF-20, texto: "Datos incompletos o exceso sobre el límite sin excepción registrada: el sistema impide la aprobación interna e indica qué falta." }
+      - { id: E2, requisito: RNF-03, texto: "Operación interrumpida: no queda una versión nueva activa sin las dos aprobaciones; el presupuesto vigente conserva su estado anterior." }
+      - { id: E3, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la operación." }
   - id: CU-12
     nombre: Registrar contrato de subcontrato
     subsistema: B
     actores: [ADM]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Administrador registra el contrato de un subcontratista de la obra. El contrato legal se
+      registra en el ERP, que es su dueño, y el sistema lo vincula en el ECMS con el alcance técnico
+      de la obra: rubros, precios, límites, impuestos y retenciones.
+    precondiciones:
+      - La obra tiene una versión de presupuesto vigente con los rubros y precios que abarca el contrato.
+      - El subcontratista está registrado como socio de la organización.
+      - El actor tiene rol admin vigente sobre la obra.
+    poscondiciones:
+      - El subcontrato queda registrado con número, monto, modalidad y estado, vinculado a la obra, al socio y a su alcance técnico.
+      - El contrato legal queda registrado en el ERP y relacionado con el subcontrato del ECMS.
+    flujo:
+      - { actor: ADM, accion: "Selecciona la obra y solicita registrar un subcontrato.", respuesta: "Presenta los socios de la organización y los rubros e ítems de la versión vigente." }
+      - { actor: ADM, accion: "Elige el socio e indica número, monto, modalidad, rubros alcanzados, precios, límites, impuestos y retenciones.", respuesta: "Comprueba que los rubros pertenezcan a la versión vigente y que el número no esté registrado en la obra." }
+      - { actor: ADM, accion: "Confirma el registro.", respuesta: "Registra el subcontrato vinculado a su alcance técnico y publica el evento para que el ERP registre el contrato legal." }
+    excepciones:
+      - { id: E1, paso: 2, requisito: RF-23, texto: "Rubro ajeno a la versión vigente o número repetido: el sistema no registra el subcontrato e indica el dato a corregir." }
+      - { id: E2, requisito: RNF-01, texto: "El actor no tiene rol admin vigente sobre la obra: el sistema deniega el registro." }
   - id: CU-13
     nombre: Consultar estado del subcontrato
     subsistema: B
     actores: [SUB]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Subcontratista consulta el estado de su contrato: las mediciones de su trabajo, los
+      certificados de subcontrato con sus valorizaciones y los saldos. La vista se limita a su
+      contrato y no muestra presupuestos internos, márgenes, salarios ni otros contratos.
+    precondiciones:
+      - El actor accede como subcontratista a un contrato de subcontrato registrado.
+    poscondiciones:
+      - El actor ve solo los datos de su contrato.
+      - No se modifica ningún registro.
+    flujo:
+      - { actor: SUB, accion: "Ingresa y selecciona su contrato.", respuesta: "Comprueba que el contrato pertenezca al socio del actor y presenta su número, monto, modalidad y estado." }
+      - { actor: SUB, accion: "Consulta las mediciones de su trabajo.", respuesta: "Lista las mediciones del contrato con ejecutor subcontratado, con cantidad, período y estado." }
+      - { actor: SUB, accion: "Consulta los certificados y las valorizaciones.", respuesta: "Muestra los certificados de subcontrato con su valorización, el monto certificado y el saldo certificable." }
+    excepciones:
+      - { id: E1, paso: 1, requisito: RNF-02, texto: "Contrato ajeno: el contrato no pertenece al socio del actor; el sistema deniega la consulta y registra el intento." }
+      - { id: E2, requisito: RNF-01, texto: "El actor no tiene acceso vigente: el sistema deniega la consulta." }
   - id: CU-14
     nombre: Certificar y valorizar subcontrato
     subsistema: B
     actores: [SUP, SUB, ERP]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      Incluye CU-10. El Responsable Técnico certifica el trabajo de un subcontratista a partir de
+      las mediciones aprobadas con ejecutor subcontratado. El sistema valoriza el certificado de
+      subcontrato con los precios del contrato, registra esa valorización en el control de costos
+      del ECMS sin cambiar el precio de venta al cliente, lo emite y lo envía al ERP para el proceso
+      de pago. El Subcontratista ve el certificado emitido de su contrato.
+    precondiciones:
+      - El subcontrato está registrado (CU-12).
+      - Existen mediciones aprobadas con ejecutor subcontratado dentro del alcance del contrato.
+      - El actor tiene un rol vigente sobre la obra.
+    poscondiciones:
+      - Queda un certificado de subcontrato Emitido con su valorización contractual, presentada por separado del costo analítico y del precio de venta.
+      - El evento de certificado emitido queda publicado para que el ERP registre el pago (CU-10).
+      - El acumulado físico del ítem no cambia: la medición ya se contó una sola vez al aprobarse en CU-05.
+    flujo:
+      - { actor: SUP, accion: "Selecciona el subcontrato y el período.", respuesta: "Reúne las mediciones aprobadas del período con ejecutor subcontratado dentro del alcance del contrato." }
+      - { actor: SUP, accion: "Solicita la valorización del certificado.", respuesta: "Valoriza cada cantidad con el precio del contrato, en guaraníes y con aritmética decimal, aplica las retenciones del contrato y presenta por separado costo analítico, valorización contractual, precio de venta y pago." }
+      - { actor: SUP, accion: "Emite el certificado de subcontrato.", respuesta: "Registra el certificado de subcontrato Emitido con número, fecha y actor, y su valorización en el control de costos del ECMS." }
+      - { actor: SUP, accion: "Confirma el envío al ERP.", respuesta: "Incluye CU-10: publica el evento de certificado emitido para que el ERP registre el pago al subcontratista." }
+      - { actor: SUB, accion: "Consulta el certificado emitido de su contrato.", respuesta: "Muestra la valorización de su contrato sin precios de venta, márgenes ni datos de otros contratos." }
+    alternativos:
+      - { id: A1, paso: 1, requisito: RF-10, continua: true, texto: "Medición ya certificada: la medición integra otro certificado de subcontrato; el sistema la excluye para no valorizar dos veces el mismo trabajo físico." }
+    excepciones:
+      - { id: E1, paso: 1, texto: "Sin mediciones del subcontrato: no hay mediciones aprobadas con ejecutor subcontratado en el período; el sistema no genera el certificado." }
+      - { id: E2, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la certificación." }
   - id: CU-15
     nombre: Calcular costos por vía
     subsistema: A
     actores: [ING, ECMS]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Ingeniero de Obra solicita el costo de la obra por rubro e ítem. El Motor de Ingeniería
+      calcula el costo de cada ítem por las vías de materiales, mano de obra y equipos a partir de
+      su análisis de costo unitario y lo compara con el presupuesto vigente, que ya refleja los
+      movimientos aprobados. Cada importe identifica vía, período, fuente y naturaleza.
+    precondiciones:
+      - La obra tiene una versión de presupuesto vigente con análisis de costo unitario en sus ítems.
+      - El actor tiene un rol vigente sobre la obra.
+    poscondiciones:
+      - El costo por obra, rubro e ítem queda desagregado por vía y comparado con el presupuesto vigente, con fecha de corte, unidad y moneda.
+      - Ningún movimiento presupuestario se registra como costo incurrido.
+    flujo:
+      - { actor: ING, accion: "Selecciona la obra y la fecha de corte y solicita el análisis de costos.", respuesta: "Obtiene la versión de presupuesto vigente y los análisis de costo unitario de sus ítems." }
+      - { actor: ECMS, accion: "Calcula el costo de cada ítem por las vías de materiales, mano de obra y equipos.", respuesta: "Suma los componentes de cada análisis con aritmética decimal, en guaraníes, y agrega los importes por ítem, rubro y obra." }
+      - { actor: ING, accion: "Revisa la comparación con el presupuesto vigente.", respuesta: "Muestra cada importe con su vía, período, fuente y naturaleza junto al importe presupuestado, con fecha de corte, unidad y moneda." }
+    alternativos:
+      - { id: A1, paso: 1, requisito: RF-26, continua: true, texto: "Ítem sin análisis de costo unitario: el sistema lo informa como ítem sin costo calculado y continúa con los demás." }
+    excepciones:
+      - { id: E1, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la consulta." }
   - id: CU-16
     nombre: Consultar reportes y Curva S
     subsistema: B
     actores: [ADM, SUP]
-    detallado: false
+    detallado: true
+    creado_por: "Rojas, Sebastián"
+    fecha_creacion: "2026-10-22"
+    modificado_por: "Rojas, Sebastián"
+    fecha_modificacion: "2026-10-22"
+    descripcion: >-
+      El Administrador o el Responsable Técnico consulta los reportes de la obra: la Curva S a una
+      fecha de corte, con avance físico, avance financiero y avance físico pendiente de movimiento
+      presupuestario vigente, y el resumen de presupuesto vigente, costos propios y subcontratados,
+      certificaciones y saldos por obra y rubro, con acceso al respaldo de cada cifra.
+    precondiciones:
+      - El actor tiene un rol vigente sobre una obra de su organización.
+    poscondiciones:
+      - Cada total se presenta con fecha de corte, unidad, moneda y procedencia, y conduce a su registro o documento fuente.
+      - No se modifica ningún registro.
+    flujo:
+      - { actor: ADM, accion: "Selecciona la obra y la fecha de corte.", respuesta: "Comprueba que la obra pertenezca a la organización del actor." }
+      - { actor: ADM, accion: "Solicita la Curva S.", respuesta: "Calcula a la misma fecha de corte las series de avance físico, avance financiero y físico pendiente de movimiento vigente, y explica unidad y ponderación." }
+      - { actor: ADM, accion: "Solicita el resumen por rubro.", respuesta: "Muestra presupuesto vigente, costos propios y subcontratados, certificaciones y saldos por obra y rubro, cada total con fecha de corte, unidad, moneda y procedencia." }
+      - { actor: ADM, accion: "Selecciona una cifra.", respuesta: "Presenta el registro o el documento fuente que la respalda." }
+    excepciones:
+      - { id: E1, paso: 1, requisito: PR-02, texto: "Obra de otra organización: la obra no pertenece a la organización del actor; el sistema no muestra sus datos." }
+      - { id: E2, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la consulta." }
 
 subsistemas:
   A: { nombre: "Presupuesto y Medición", descripcion: "Plan de la obra, su versionado y la medición física del avance." }
@@ -1087,15 +1428,21 @@ relaciones:
 # PUERTOS (interfaces declaradas por el dominio; la infraestructura las implementa).
 # ------------------------------------------------------------------------------
 puertos:
-  - { id: i_presupuesto_repositorio, nombre: IPresupuestoRepositorio, metodos: ["buscarVersionVigente(obraId)", "buscarPorHash(hash)", "guardarVersion(version)"], adaptador: presupuesto_repositorio_sql }
+  - { id: i_presupuesto_repositorio, nombre: IPresupuestoRepositorio, metodos: ["buscarVersionVigente(obraId)", "buscarVersion(versionId)", "buscarPorHash(hash)", "guardarVersion(version)", "listarACU(obraId)"], adaptador: presupuesto_repositorio_sql }
   - { id: i_almacen_archivos, nombre: IAlmacenArchivos, metodos: ["guardar(archivo)", "recuperar(ruta)"], adaptador: almacen_archivos_s3 }
   - { id: i_lector_planilla, nombre: ILectorPlanilla, metodos: ["leer(archivo)", "detectarEstructura(hojas)"], adaptador: lector_planilla_xlsx }
-  - { id: i_medicion_repositorio, nombre: IMedicionRepositorio, metodos: ["listarPorPeriodo(periodoId)", "guardar(medicion)", "acumuladoAprobado(lineaId)"], adaptador: medicion_repositorio_sql }
-  - { id: i_certificado_repositorio, nombre: ICertificadoRepositorio, metodos: ["buscarRevision(revisionId)", "guardar(certificado)", "siguienteNumero(obraId)"], adaptador: certificado_repositorio_sql }
+  - { id: i_medicion_repositorio, nombre: IMedicionRepositorio, metodos: ["listarPorPeriodo(periodoId)", "listarPorSubcontrato(subcontratoId)", "buscarPorItem(lineaId, periodoId)", "guardar(medicion)", "acumuladoAprobado(lineaId)", "buscarPeriodo(periodoId)", "guardarPeriodo(periodo)"], adaptador: medicion_repositorio_sql }
+  - { id: i_certificado_repositorio, nombre: ICertificadoRepositorio, metodos: ["buscarRevision(revisionId)", "listarPorSubcontrato(subcontratoId)", "guardar(certificado)", "siguienteNumero(obraId)"], adaptador: certificado_repositorio_sql }
   - { id: i_generador_documento, nombre: IGeneradorDocumento, metodos: ["exportar(revision, formato)"], adaptador: generador_documento_xlsxpdf }
   - { id: i_publicador_eventos, nombre: IPublicadorEventos, metodos: ["publicar(evento)"], adaptador: puente_erp }
   - { id: i_auditoria_repositorio, nombre: IAuditoriaRepositorio, metodos: ["registrar(entrada)"], adaptador: auditoria_repositorio_sql }
   - { id: i_reloj, nombre: IReloj, metodos: ["ahora()"], adaptador: reloj_sistema }
+  - { id: i_obra_repositorio, nombre: IObraRepositorio, metodos: ["existeCodigo(codigo)", "guardar(obra)"], adaptador: obra_repositorio_sql }
+  - { id: i_usuario_repositorio, nombre: IUsuarioRepositorio, metodos: ["listarMiembros(organizacionId)"], adaptador: usuario_repositorio_sql }
+  - { id: i_movimiento_repositorio, nombre: IMovimientoRepositorio, metodos: ["buscar(movimientoId)", "guardar(movimiento)"], adaptador: movimiento_repositorio_sql }
+  - { id: i_subcontrato_repositorio, nombre: ISubcontratoRepositorio, metodos: ["buscar(subcontratoId)", "listarSocios(organizacionId)", "guardar(subcontrato)"], adaptador: subcontrato_repositorio_sql }
+  - { id: i_documento_financiero_repositorio, nombre: IDocumentoFinancieroRepositorio, metodos: ["buscarPorCertificado(certificadoId)", "guardar(documento)"], adaptador: documento_financiero_repositorio_erp }
+  - { id: i_consulta_reportes, nombre: IConsultaReportes, metodos: ["avanceFisico(obraId, fechaCorte)", "avanceFinanciero(obraId, fechaCorte)", "pendienteDeMovimiento(obraId, fechaCorte)", "resumenPorRubro(obraId, fechaCorte)", "respaldo(cifraId)"], adaptador: consulta_reportes_sql }
 
 # ------------------------------------------------------------------------------
 # COMPONENTES (clases boundary, control y adaptadores). Un id, un nombre.
@@ -1116,6 +1463,44 @@ componentes:
   - { id: evaluar_saldo_servicio, capa: control, nombre: EvaluarSaldoServicio }
   - { id: emitir_certificado_interactor, capa: control, nombre: EmitirCertificadoInteractor }
   - { id: calcular_valorizacion_servicio, capa: control, nombre: CalcularValorizacionServicio }
+  - { id: crear_obra_controlador, capa: boundary, nombre: CrearObraControlador }
+  - { id: obra_presentador, capa: boundary, nombre: ObraPresentador }
+  - { id: crear_obra_interactor, capa: control, nombre: CrearObraInteractor }
+  - { id: activar_version_controlador, capa: boundary, nombre: ActivarVersionControlador }
+  - { id: version_presentador, capa: boundary, nombre: VersionPresentador }
+  - { id: activar_version_interactor, capa: control, nombre: ActivarVersionInteractor }
+  - { id: registrar_medicion_controlador, capa: boundary, nombre: RegistrarMedicionControlador }
+  - { id: registrar_medicion_interactor, capa: control, nombre: RegistrarMedicionInteractor }
+  - { id: cerrar_periodo_controlador, capa: boundary, nombre: CerrarPeriodoControlador }
+  - { id: periodo_presentador, capa: boundary, nombre: PeriodoPresentador }
+  - { id: cerrar_periodo_interactor, capa: control, nombre: CerrarPeriodoInteractor }
+  - { id: generar_borrador_controlador, capa: boundary, nombre: GenerarBorradorControlador }
+  - { id: generar_borrador_interactor, capa: control, nombre: GenerarBorradorInteractor }
+  - { id: detectar_alertas_servicio, capa: control, nombre: DetectarAlertasServicio }
+  - { id: corregir_certificado_controlador, capa: boundary, nombre: CorregirCertificadoControlador }
+  - { id: corregir_certificado_interactor, capa: control, nombre: CorregirCertificadoInteractor }
+  - { id: documento_financiero_controlador, capa: boundary, nombre: DocumentoFinancieroControlador }
+  - { id: documento_financiero_presentador, capa: boundary, nombre: DocumentoFinancieroPresentador }
+  - { id: derivar_documento_interactor, capa: control, nombre: DerivarDocumentoInteractor }
+  - { id: movimiento_controlador, capa: boundary, nombre: MovimientoControlador }
+  - { id: movimiento_presentador, capa: boundary, nombre: MovimientoPresentador }
+  - { id: movimiento_interactor, capa: control, nombre: MovimientoInteractor }
+  - { id: evaluar_limite_servicio, capa: control, nombre: EvaluarLimiteServicio }
+  - { id: registrar_subcontrato_controlador, capa: boundary, nombre: RegistrarSubcontratoControlador }
+  - { id: subcontrato_presentador, capa: boundary, nombre: SubcontratoPresentador }
+  - { id: registrar_subcontrato_interactor, capa: control, nombre: RegistrarSubcontratoInteractor }
+  - { id: consultar_subcontrato_controlador, capa: boundary, nombre: ConsultarSubcontratoControlador }
+  - { id: consultar_subcontrato_interactor, capa: control, nombre: ConsultarSubcontratoInteractor }
+  - { id: certificar_subcontrato_controlador, capa: boundary, nombre: CertificarSubcontratoControlador }
+  - { id: certificar_subcontrato_interactor, capa: control, nombre: CertificarSubcontratoInteractor }
+  - { id: calcular_costos_controlador, capa: boundary, nombre: CalcularCostosControlador }
+  - { id: costos_presentador, capa: boundary, nombre: CostosPresentador }
+  - { id: calcular_costos_interactor, capa: control, nombre: CalcularCostosInteractor }
+  - { id: calcular_costo_via_servicio, capa: control, nombre: CalcularCostoViaServicio }
+  - { id: consultar_reportes_controlador, capa: boundary, nombre: ConsultarReportesControlador }
+  - { id: reporte_presentador, capa: boundary, nombre: ReportePresentador }
+  - { id: consultar_reportes_interactor, capa: control, nombre: ConsultarReportesInteractor }
+  - { id: generar_curva_s_servicio, capa: control, nombre: GenerarCurvaSServicio }
   - { id: presupuesto_repositorio_sql, capa: adapter, contenedor: bd, nombre: PresupuestoRepositorioSQL }
   - { id: almacen_archivos_s3, capa: adapter, contenedor: archivos, nombre: AlmacenArchivosS3 }
   - { id: lector_planilla_xlsx, capa: adapter, contenedor: ecms, nombre: LectorPlanillaXLSX }
@@ -1125,33 +1510,107 @@ componentes:
   - { id: puente_erp, capa: adapter, contenedor: erp, nombre: PuenteERP }
   - { id: auditoria_repositorio_sql, capa: adapter, contenedor: bd, nombre: AuditoriaRepositorioSQL }
   - { id: reloj_sistema, capa: adapter, contenedor: ecms, nombre: RelojSistema }
+  - { id: obra_repositorio_sql, capa: adapter, contenedor: bd, nombre: ObraRepositorioSQL }
+  - { id: usuario_repositorio_sql, capa: adapter, contenedor: bd, nombre: UsuarioRepositorioSQL }
+  - { id: movimiento_repositorio_sql, capa: adapter, contenedor: bd, nombre: MovimientoRepositorioSQL }
+  - { id: subcontrato_repositorio_sql, capa: adapter, contenedor: bd, nombre: SubcontratoRepositorioSQL }
+  - { id: documento_financiero_repositorio_erp, capa: adapter, contenedor: erp, nombre: DocumentoFinancieroRepositorioERP }
+  - { id: consulta_reportes_sql, capa: adapter, contenedor: bd, nombre: ConsultaReportesSQL }
 
 # ------------------------------------------------------------------------------
 # CLASES POR CASO DE USO (Clean Architecture proyectada en estereotipos Jacobson).
 # ------------------------------------------------------------------------------
 clases_cu:
+  CU-01:
+    boundary: [crear_obra_controlador, obra_presentador]
+    control:  [crear_obra_interactor]
+    entity:   [obra, configuracion_obra, rol_asignado, usuario, organizacion, cliente]
+    puertos:  [i_obra_repositorio, i_usuario_repositorio, i_auditoria_repositorio]
   CU-02:
     boundary: [importar_presupuesto_controlador, importacion_presentador]
     control:  [importar_presupuesto_interactor, validar_estructura_servicio, contrastar_totales_servicio]
     entity:   [obra, presupuesto, version_presupuesto, linea_presupuesto, archivo_origen, informe_importacion]
     puertos:  [i_presupuesto_repositorio, i_almacen_archivos, i_lector_planilla, i_auditoria_repositorio]
+  CU-03:
+    boundary: [activar_version_controlador, version_presentador]
+    control:  [activar_version_interactor]
+    entity:   [version_presupuesto, presupuesto, linea_presupuesto, informe_importacion]
+    puertos:  [i_presupuesto_repositorio, i_auditoria_repositorio, i_reloj]
+  CU-04:
+    boundary: [registrar_medicion_controlador, medicion_presentador]
+    control:  [registrar_medicion_interactor]
+    entity:   [medicion_oficial, evidencia, periodo, linea_presupuesto, version_presupuesto]
+    puertos:  [i_medicion_repositorio, i_presupuesto_repositorio, i_almacen_archivos, i_auditoria_repositorio]
   CU-05:
     boundary: [aprobar_medicion_controlador, medicion_presentador]
     control:  [aprobar_medicion_interactor, evaluar_saldo_servicio]
     entity:   [periodo, medicion_oficial, evidencia, linea_presupuesto, version_presupuesto, propuesta_pendiente]
     puertos:  [i_medicion_repositorio, i_presupuesto_repositorio, i_auditoria_repositorio, i_reloj]
+  CU-06:
+    boundary: [cerrar_periodo_controlador, periodo_presentador]
+    control:  [cerrar_periodo_interactor]
+    entity:   [periodo, medicion_oficial]
+    puertos:  [i_medicion_repositorio, i_auditoria_repositorio, i_reloj]
+  CU-07:
+    boundary: [generar_borrador_controlador, certificado_presentador]
+    control:  [generar_borrador_interactor, calcular_valorizacion_servicio, detectar_alertas_servicio]
+    entity:   [certificado, revision_certificado, linea_certificado, medicion_oficial, linea_presupuesto, configuracion_obra, valorizacion]
+    puertos:  [i_medicion_repositorio, i_presupuesto_repositorio, i_certificado_repositorio, i_auditoria_repositorio]
+  CU-08:
+    boundary: [corregir_certificado_controlador, certificado_presentador]
+    control:  [corregir_certificado_interactor, calcular_valorizacion_servicio]
+    entity:   [certificado, revision_certificado, linea_certificado, valorizacion]
+    puertos:  [i_certificado_repositorio, i_auditoria_repositorio]
   CU-09:
     boundary: [emitir_certificado_controlador, certificado_presentador]
     control:  [emitir_certificado_interactor, calcular_valorizacion_servicio]
     entity:   [certificado, revision_certificado, linea_certificado, retencion_aplicada, configuracion_obra, fondo_retencion, valorizacion]
     puertos:  [i_certificado_repositorio, i_generador_documento, i_publicador_eventos, i_auditoria_repositorio, i_reloj]
+  CU-10:
+    boundary: [documento_financiero_controlador, documento_financiero_presentador]
+    control:  [derivar_documento_interactor]
+    entity:   [documento_financiero_erp, certificado]
+    puertos:  [i_documento_financiero_repositorio, i_auditoria_repositorio]
+  CU-11:
+    boundary: [movimiento_controlador, movimiento_presentador]
+    control:  [movimiento_interactor, evaluar_limite_servicio]
+    entity:   [movimiento_presupuestario, aprobacion, propuesta_pendiente, linea_presupuesto, version_presupuesto]
+    puertos:  [i_movimiento_repositorio, i_presupuesto_repositorio, i_almacen_archivos, i_auditoria_repositorio]
+  CU-12:
+    boundary: [registrar_subcontrato_controlador, subcontrato_presentador]
+    control:  [registrar_subcontrato_interactor]
+    entity:   [subcontrato, socio, obra]
+    puertos:  [i_subcontrato_repositorio, i_presupuesto_repositorio, i_publicador_eventos, i_auditoria_repositorio]
+  CU-13:
+    boundary: [consultar_subcontrato_controlador, subcontrato_presentador]
+    control:  [consultar_subcontrato_interactor]
+    entity:   [subcontrato, socio, certificado, medicion_oficial, valorizacion]
+    puertos:  [i_subcontrato_repositorio, i_medicion_repositorio, i_certificado_repositorio, i_auditoria_repositorio]
+  CU-14:
+    boundary: [certificar_subcontrato_controlador, certificado_presentador]
+    control:  [certificar_subcontrato_interactor, calcular_valorizacion_servicio]
+    entity:   [certificado, revision_certificado, linea_certificado, retencion_aplicada, subcontrato, medicion_oficial, valorizacion]
+    puertos:  [i_subcontrato_repositorio, i_medicion_repositorio, i_certificado_repositorio, i_publicador_eventos, i_auditoria_repositorio]
+  CU-15:
+    boundary: [calcular_costos_controlador, costos_presentador]
+    control:  [calcular_costos_interactor, calcular_costo_via_servicio]
+    entity:   [analisis_costo_unitario, componente_acu, linea_presupuesto, version_presupuesto, obra]
+    puertos:  [i_presupuesto_repositorio]
+  CU-16:
+    boundary: [consultar_reportes_controlador, reporte_presentador]
+    control:  [consultar_reportes_interactor, generar_curva_s_servicio]
+    entity:   [version_presupuesto, linea_presupuesto, periodo, linea_certificado, obra]
+    puertos:  [i_consulta_reportes, i_presupuesto_repositorio]
 
 # ------------------------------------------------------------------------------
 # MÁQUINAS DE ESTADO. Única declaración: prosa y diagramas leen de aquí.
+# creado_en: casos de uso que crean la entidad en su estado inicial.
+# cu (en cada transición): caso o casos de uso que la disparan; ninguna transición queda sin caso.
 # ------------------------------------------------------------------------------
 estados:
   version_presupuesto:
     inicial: Propuesta
+    creado_en: [CU-02, CU-11]
     finales: [Reemplazada, Descartada]
     estados:
       - { n: Propuesta,   d: "Importada y registrada; espera la confirmación de estructura y la activación." }
@@ -1159,31 +1618,34 @@ estados:
       - { n: Reemplazada, d: "Un movimiento aprobado generó una versión posterior; permanece consultable." }
       - { n: Descartada,  d: "El Administrador no confirmó su estructura; no llegó a regir." }
     transiciones:
-      - { de: Propuesta, a: Vigente, evento: "confirmar estructura y activar", guarda: "estructura confirmada" }
-      - { de: Propuesta, a: Descartada, evento: "descartar" }
-      - { de: Vigente, a: Reemplazada, evento: "activar versión posterior" }
+      - { de: Propuesta, a: Vigente, evento: "confirmar estructura y activar", guarda: "estructura confirmada", cu: [CU-03, CU-11] }
+      - { de: Propuesta, a: Descartada, evento: "descartar", cu: CU-03 }
+      - { de: Vigente, a: Reemplazada, evento: "activar versión posterior", cu: [CU-03, CU-11] }
   medicion_oficial:
     inicial: Registrada
+    creado_en: [CU-04]
     finales: [Aprobada]
     estados:
       - { n: Registrada, d: "Cargada por el Ingeniero de Obra con su evidencia; espera decisión." }
       - { n: Aprobada,   d: "El Responsable Técnico la validó; su cantidad cubierta es certificable." }
       - { n: Rechazada,  d: "Devuelta con motivo; no integra el acumulado físico." }
     transiciones:
-      - { de: Registrada, a: Aprobada, evento: "aprobar" }
-      - { de: Registrada, a: Rechazada, evento: "rechazar", guarda: "motivo informado" }
-      - { de: Rechazada, a: Registrada, evento: "corregir y reenviar" }
+      - { de: Registrada, a: Aprobada, evento: "aprobar", cu: CU-05 }
+      - { de: Registrada, a: Rechazada, evento: "rechazar", guarda: "motivo informado", cu: CU-05 }
+      - { de: Rechazada, a: Registrada, evento: "corregir y reenviar", cu: CU-04 }
   certificado:
     inicial: Borrador
+    creado_en: [CU-07, CU-14]
     finales: [Emitido]
     estados:
       - { n: Borrador, d: "En preparación o corrección; todavía no se emitió. Editable." }
       - { n: Emitido,  d: "Con número, fecha y actor; visible en el avance físico-financiero de la obra y publicado al ERP." }
     transiciones:
-      - { de: Borrador, a: Emitido, evento: "emitir" }
-      - { de: Emitido, a: Borrador, evento: "corregir / crea revisión nueva y conserva la anterior" }
+      - { de: Borrador, a: Emitido, evento: "emitir", cu: [CU-09, CU-14] }
+      - { de: Emitido, a: Borrador, evento: "corregir / crea revisión nueva y conserva la anterior", cu: CU-08 }
   movimiento_presupuestario:
     inicial: Propuesto
+    creado_en: [CU-11]
     finales: [Vigente, Rechazado]
     estados:
       - { n: Propuesto,            d: "Registrado con tipo, objetivo, motivo y respaldo documental." }
@@ -1192,13 +1654,14 @@ estados:
       - { n: Vigente,              d: "Generó una versión de presupuesto nueva que ya rige." }
       - { n: Rechazado,            d: "No prosperó; el presupuesto vigente no cambia." }
     transiciones:
-      - { de: Propuesto, a: AprobadoInterno, evento: "aprobar internamente", guarda: "datos completos y dentro del límite" }
-      - { de: Propuesto, a: Rechazado, evento: "rechazar" }
-      - { de: AprobadoInterno, a: AprobadoContractual, evento: "aprobar contractualmente" }
-      - { de: AprobadoInterno, a: Rechazado, evento: "rechazar" }
-      - { de: AprobadoContractual, a: Vigente, evento: "activar versión" }
+      - { de: Propuesto, a: AprobadoInterno, evento: "aprobar internamente", guarda: "datos completos y dentro del límite", cu: CU-11 }
+      - { de: Propuesto, a: Rechazado, evento: "rechazar", cu: CU-11 }
+      - { de: AprobadoInterno, a: AprobadoContractual, evento: "aprobar contractualmente", cu: CU-11 }
+      - { de: AprobadoInterno, a: Rechazado, evento: "rechazar", cu: CU-11 }
+      - { de: AprobadoContractual, a: Vigente, evento: "activar versión", cu: CU-11 }
   documento_financiero_erp:
     inicial: Registrado
+    creado_en: [CU-10]
     finales: [Cobrado, Pagado]
     estados:
       - { n: Registrado, d: "Derivado de un certificado emitido: factura al cliente o pago al subcontratista." }
@@ -1206,9 +1669,17 @@ estados:
       - { n: Aprobado,   d: "Finanzas y Tesorería aprobó el pago al subcontratista." }
       - { n: Pagado,     d: "Finanzas y Tesorería ejecutó el pago." }
     transiciones:
-      - { de: Registrado, a: Cobrado, evento: "registrar cobro", guarda: "tipo factura" }
-      - { de: Registrado, a: Aprobado, evento: "aprobar pago", guarda: "tipo pago" }
-      - { de: Aprobado, a: Pagado, evento: "ejecutar pago" }
+      - { de: Registrado, a: Cobrado, evento: "registrar cobro", guarda: "tipo factura", cu: CU-10 }
+      - { de: Registrado, a: Aprobado, evento: "aprobar pago", guarda: "tipo pago", cu: CU-10 }
+      - { de: Aprobado, a: Pagado, evento: "ejecutar pago", cu: CU-10 }
+  periodo:
+    inicial: Abierto
+    finales: [Cerrado]
+    estados:
+      - { n: Abierto, d: "Admite el registro, la corrección y la aprobación de mediciones." }
+      - { n: Cerrado, d: "Todas sus mediciones están aprobadas; no admite mediciones nuevas." }
+    transiciones:
+      - { de: Abierto, a: Cerrado, evento: "cerrar", guarda: "todas las mediciones aprobadas", cu: CU-06 }
 
 # ------------------------------------------------------------------------------
 # SECUENCIAS (diagrama de interacción). Derivan del mismo flujo de la especificación.
@@ -1216,6 +1687,39 @@ estados:
 # tipo: sync (llamada) | return (respuesta) | create
 # ------------------------------------------------------------------------------
 secuencias:
+  CU-01:
+    participantes:
+      - { id: ADM,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: crear_obra_controlador }
+      - { id: UC,   tipo: control,   ref: crear_obra_interactor }
+      - { id: UREP, tipo: interface, ref: i_usuario_repositorio }
+      - { id: OREP, tipo: interface, ref: i_obra_repositorio }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: OBR,  tipo: entity,    ref: obra }
+      - { id: ROL,  tipo: entity,    ref: rol_asignado }
+    mensajes:
+      - { de: ADM,  a: CTRL, msg: "nuevaObra(organizacionId)" }
+      - { de: CTRL, a: UC,   msg: "prepararAlta(organizacionId)" }
+      - { de: UC,   a: UREP, msg: "listarMiembros(organizacionId)" }
+      - { de: UREP, a: UC,   msg: "miembros de la organización", tipo: return }
+      - { de: UC,   a: CTRL, msg: "formulario y miembros", tipo: return }
+      - { de: CTRL, a: ADM,  msg: "muestra el formulario y los miembros", tipo: return }
+      - { de: ADM,  a: CTRL, msg: "crearObra(datosObra, responsables)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(solicitudAlta, actorId)" }
+      - { de: UC,   a: OREP, msg: "existeCodigo(codigo)" }
+      - { de: OREP, a: UC,   msg: "verdadero | falso", tipo: return }
+      - { frag: alt, etiqueta: "el código ya está en uso" }
+      - { de: UC,   a: CTRL, msg: "codigoEnUso(codigo)", tipo: return }
+      - { frag: else, etiqueta: "código disponible" }
+      - { de: UC,   a: OBR,  msg: "crear(codigo, nombre, direccion, fechas, clienteId)", tipo: create }
+      - { frag: loop, etiqueta: "por cada responsable de la organización" }
+      - { de: UC,   a: ROL,  msg: "crear(usuarioId, rol, vigenteDesde)", tipo: create }
+      - { frag: end }
+      - { de: UC,   a: OREP, msg: "guardar(obra)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, alta)" }
+      - { de: UC,   a: CTRL, msg: "obraRegistrada(obraId)", tipo: return }
+      - { frag: end }
+      - { de: CTRL, a: ADM,  msg: "informa la obra creada y sus responsables", tipo: return }
   CU-02:
     participantes:
       - { id: ING,  tipo: actor }
@@ -1256,6 +1760,81 @@ secuencias:
       - { de: UC,   a: CTRL, msg: "versionRegistrada(versionId)", tipo: return }
       - { frag: end }
       - { de: CTRL, a: ING,  msg: "informa el resultado de la importación", tipo: return }
+  CU-03:
+    participantes:
+      - { id: ADM,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: activar_version_controlador }
+      - { id: UC,   tipo: control,   ref: activar_version_interactor }
+      - { id: REP,  tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: RLJ,  tipo: interface, ref: i_reloj }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: VER,  tipo: entity,    ref: version_presupuesto, objeto: propuesta }
+      - { id: ANT,  tipo: entity,    ref: version_presupuesto, objeto: anterior }
+    mensajes:
+      - { de: ADM,  a: CTRL, msg: "abrirVersion(versionId)" }
+      - { de: CTRL, a: UC,   msg: "obtenerVersion(versionId)" }
+      - { de: UC,   a: REP,  msg: "buscarVersion(versionId)" }
+      - { de: REP,  a: UC,   msg: "{version_presupuesto} en Propuesta", tipo: return }
+      - { de: UC,   a: CTRL, msg: "estructura e informe de importación", tipo: return }
+      - { de: CTRL, a: ADM,  msg: "muestra rubros, unidades y agrupaciones", tipo: return }
+      - { frag: alt, etiqueta: "el actor confirma la estructura (RF-05)" }
+      - { de: ADM,  a: CTRL, msg: "activarVersion(versionId)" }
+      - { de: CTRL, a: UC,   msg: "activar(versionId, actorId)" }
+      - { de: UC,   a: REP,  msg: "buscarVersionVigente(obraId)" }
+      - { de: REP,  a: UC,   msg: "versión vigente anterior | nulo", tipo: return }
+      - { de: UC,   a: RLJ,  msg: "ahora()" }
+      - { de: RLJ,  a: UC,   msg: "fecha", tipo: return }
+      - { de: UC,   a: VER,  msg: "confirmarEstructura()" }
+      - { de: UC,   a: VER,  msg: "activar(fecha)" }
+      - { de: UC,   a: ANT,  msg: "reemplazar()" }
+      - { de: UC,   a: REP,  msg: "guardarVersion(version)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, version, activación)" }
+      - { de: UC,   a: CTRL, msg: "versionVigente(versionId)", tipo: return }
+      - { frag: else, etiqueta: "el actor descarta la versión" }
+      - { de: ADM,  a: CTRL, msg: "descartarVersion(versionId)" }
+      - { de: CTRL, a: UC,   msg: "descartar(versionId, actorId)" }
+      - { de: UC,   a: VER,  msg: "descartar()" }
+      - { de: UC,   a: REP,  msg: "guardarVersion(version)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, version, descarte)" }
+      - { de: UC,   a: CTRL, msg: "versionDescartada(versionId)", tipo: return }
+      - { frag: end }
+      - { de: CTRL, a: ADM,  msg: "informa el estado resultante de la versión", tipo: return }
+  CU-04:
+    participantes:
+      - { id: ING,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: registrar_medicion_controlador }
+      - { id: UC,   tipo: control,   ref: registrar_medicion_interactor }
+      - { id: PREP, tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: MREP, tipo: interface, ref: i_medicion_repositorio }
+      - { id: ALM,  tipo: interface, ref: i_almacen_archivos }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: MED,  tipo: entity,    ref: medicion_oficial }
+      - { id: EVI,  tipo: entity,    ref: evidencia }
+    mensajes:
+      - { de: ING,  a: CTRL, msg: "abrirMedicion(obraId, periodoId, lineaId)" }
+      - { de: CTRL, a: UC,   msg: "prepararMedicion(periodoId, lineaId)" }
+      - { de: UC,   a: PREP, msg: "buscarVersionVigente(obraId)" }
+      - { de: PREP, a: UC,   msg: "{version_presupuesto} vigente", tipo: return }
+      - { de: UC,   a: MREP, msg: "acumuladoAprobado(lineaId)" }
+      - { de: MREP, a: UC,   msg: "cantidadAcumulada", tipo: return }
+      - { de: UC,   a: CTRL, msg: "unidad, acumulado aprobado y saldo del ítem", tipo: return }
+      - { de: CTRL, a: ING,  msg: "muestra el formulario de medición", tipo: return }
+      - { de: ING,  a: CTRL, msg: "registrarMedicion(lineaId, cantidad, ejecutor, evidencia)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(solicitudMedicion, actorId)" }
+      - { de: UC,   a: MREP, msg: "buscarPorItem(lineaId, periodoId)" }
+      - { de: MREP, a: UC,   msg: "medición existente | nulo", tipo: return }
+      - { frag: alt, etiqueta: "existe una medición Rechazada del ítem (RF-10)" }
+      - { de: UC,   a: MED,  msg: "corregir(cantidad, ejecutor)" }
+      - { frag: else, etiqueta: "el ítem no tiene medición en el período" }
+      - { de: UC,   a: MED,  msg: "crear(cantidad, unidad, ejecutor, estado = Registrada)", tipo: create }
+      - { frag: end }
+      - { de: UC,   a: ALM,  msg: "guardar(evidencia)" }
+      - { de: ALM,  a: UC,   msg: "ruta", tipo: return }
+      - { de: UC,   a: EVI,  msg: "crear(nombre, tipo, ruta)", tipo: create }
+      - { de: UC,   a: MREP, msg: "guardar(medicion)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, version, medición)" }
+      - { de: UC,   a: CTRL, msg: "medicionRegistrada(medicionId)", tipo: return }
+      - { de: CTRL, a: ING,  msg: "confirma la medición pendiente de aprobación", tipo: return }
   CU-05:
     participantes:
       - { id: SUP,  tipo: actor }
@@ -1295,6 +1874,103 @@ secuencias:
       - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, version, decisión)" }
       - { de: UC,   a: CTRL, msg: "resultado(estado, cantidadCertificable, exceso)", tipo: return }
       - { de: CTRL, a: SUP,  msg: "confirma la decisión y el acumulado actualizado", tipo: return }
+  CU-06:
+    participantes:
+      - { id: SUP,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: cerrar_periodo_controlador }
+      - { id: UC,   tipo: control,   ref: cerrar_periodo_interactor }
+      - { id: MREP, tipo: interface, ref: i_medicion_repositorio }
+      - { id: RLJ,  tipo: interface, ref: i_reloj }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: PER,  tipo: entity,    ref: periodo }
+    mensajes:
+      - { de: SUP,  a: CTRL, msg: "abrirPeriodo(obraId, periodoId)" }
+      - { de: CTRL, a: UC,   msg: "obtenerEstado(periodoId)" }
+      - { de: UC,   a: MREP, msg: "listarPorPeriodo(periodoId)" }
+      - { de: MREP, a: UC,   msg: "mediciones del período", tipo: return }
+      - { de: UC,   a: CTRL, msg: "mediciones con su estado", tipo: return }
+      - { de: CTRL, a: SUP,  msg: "muestra las mediciones y señala las pendientes", tipo: return }
+      - { de: SUP,  a: CTRL, msg: "cerrarPeriodo(periodoId)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(periodoId, actorId)" }
+      - { de: UC,   a: MREP, msg: "buscarPeriodo(periodoId)" }
+      - { de: MREP, a: UC,   msg: "{periodo} Abierto con sus mediciones", tipo: return }
+      - { de: UC,   a: PER,  msg: "puedeCerrarse()" }
+      - { de: PER,  a: UC,   msg: "verdadero | mediciones sin aprobar", tipo: return }
+      - { frag: alt, etiqueta: "todas las mediciones están aprobadas (RF-11)" }
+      - { de: UC,   a: RLJ,  msg: "ahora()" }
+      - { de: RLJ,  a: UC,   msg: "fecha", tipo: return }
+      - { de: UC,   a: PER,  msg: "cerrar(actorId, fecha)" }
+      - { de: UC,   a: MREP, msg: "guardarPeriodo(periodo)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, período, cierre)" }
+      - { de: UC,   a: CTRL, msg: "periodoCerrado(periodoId)", tipo: return }
+      - { frag: else, etiqueta: "quedan mediciones sin aprobar" }
+      - { de: UC,   a: CTRL, msg: "medicionesPendientes(lista)", tipo: return }
+      - { frag: end }
+      - { de: CTRL, a: SUP,  msg: "informa el resultado del cierre", tipo: return }
+  CU-07:
+    participantes:
+      - { id: ING,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: generar_borrador_controlador }
+      - { id: UC,   tipo: control,   ref: generar_borrador_interactor }
+      - { id: VLZ,  tipo: control,   ref: calcular_valorizacion_servicio }
+      - { id: ALE,  tipo: control,   ref: detectar_alertas_servicio }
+      - { id: MREP, tipo: interface, ref: i_medicion_repositorio }
+      - { id: PREP, tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: CREP, tipo: interface, ref: i_certificado_repositorio }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: CER,  tipo: entity,    ref: certificado }
+    mensajes:
+      - { de: ING,  a: CTRL, msg: "generarBorrador(obraId, periodoId)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(periodoId, actorId)" }
+      - { de: UC,   a: MREP, msg: "listarPorPeriodo(periodoId)" }
+      - { de: MREP, a: UC,   msg: "mediciones aprobadas con cantidad certificable", tipo: return }
+      - { de: UC,   a: PREP, msg: "buscarVersionVigente(obraId)" }
+      - { de: PREP, a: UC,   msg: "{version_presupuesto} vigente", tipo: return }
+      - { frag: alt, etiqueta: "no hay mediciones elegibles (RF-12)" }
+      - { de: UC,   a: CTRL, msg: "sinMedicionesElegibles(periodoId)", tipo: return }
+      - { frag: else, etiqueta: "hay mediciones aprobadas con saldo" }
+      - { de: UC,   a: CER,  msg: "crear(tipo = interno, estado = Borrador, revisión 1)", tipo: create }
+      - { frag: loop, etiqueta: "por cada ítem con cantidad certificable" }
+      - { de: UC,   a: MREP, msg: "acumuladoAprobado(lineaId)" }
+      - { de: MREP, a: UC,   msg: "cantidadAcumulada", tipo: return }
+      - { de: UC,   a: CER,  msg: "agregarLinea(cantidadPeriodo, precioUnitario, medicionId)" }
+      - { frag: end }
+      - { de: UC,   a: VLZ,  msg: "calcular(lineas, configuracionObra)" }
+      - { de: VLZ,  a: UC,   msg: "{valorizacion}(subtotal, impuestos, retenciones, total)", tipo: return }
+      - { de: UC,   a: ALE,  msg: "detectar(lineas, versionVigente)" }
+      - { de: ALE,  a: UC,   msg: "alertas con rubro o ítem y dato de origen", tipo: return }
+      - { de: UC,   a: CREP, msg: "guardar(certificado)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, version, borrador)" }
+      - { de: UC,   a: CTRL, msg: "borrador con valorización y alertas", tipo: return }
+      - { frag: end }
+      - { de: CTRL, a: ING,  msg: "muestra el borrador, la valorización y las alertas", tipo: return }
+  CU-08:
+    participantes:
+      - { id: ING,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: corregir_certificado_controlador }
+      - { id: UC,   tipo: control,   ref: corregir_certificado_interactor }
+      - { id: VLZ,  tipo: control,   ref: calcular_valorizacion_servicio }
+      - { id: CREP, tipo: interface, ref: i_certificado_repositorio }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: CER,  tipo: entity,    ref: certificado }
+      - { id: REV,  tipo: entity,    ref: revision_certificado }
+    mensajes:
+      - { de: ING,  a: CTRL, msg: "corregirCertificado(certificadoId)" }
+      - { de: CTRL, a: UC,   msg: "obtenerEmitido(certificadoId)" }
+      - { de: UC,   a: CREP, msg: "buscarRevision(revisionId)" }
+      - { de: CREP, a: UC,   msg: "{revision_certificado} emitida", tipo: return }
+      - { de: UC,   a: CTRL, msg: "revisión emitida con su archivo exportado", tipo: return }
+      - { de: CTRL, a: ING,  msg: "muestra la revisión emitida", tipo: return }
+      - { de: ING,  a: CTRL, msg: "confirmarCorreccion(certificadoId, motivo, cambios)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(certificadoId, motivo, cambios, actorId)" }
+      - { de: UC,   a: REV,  msg: "crear(numero = anterior + 1, revisionAnterior)", tipo: create }
+      - { de: UC,   a: VLZ,  msg: "calcular(lineas, configuracionObra)" }
+      - { de: VLZ,  a: UC,   msg: "{valorizacion} de la revisión nueva", tipo: return }
+      - { de: UC,   a: CER,  msg: "corregir(revisionNueva)" }
+      - { de: UC,   a: CREP, msg: "guardar(certificado)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, revisión, corrección)" }
+      - { de: UC,   a: CTRL, msg: "revisión nueva en Borrador", tipo: return }
+      - { de: CTRL, a: ING,  msg: "confirma la revisión nueva vinculada a la emitida", tipo: return }
   CU-09:
     participantes:
       - { id: ING,  tipo: actor }
@@ -1325,6 +2001,265 @@ secuencias:
       - { de: UC,   a: EVT,  msg: "publicar(CertificadoEmitido(certificadoId))", tipo: async }
       - { de: UC,   a: CTRL, msg: "resultado de la emisión", tipo: return }
       - { de: CTRL, a: ING,  msg: "confirma número, fecha y archivo generado", tipo: return }
+  CU-10:
+    participantes:
+      - { id: ECMS, tipo: actor }
+      - { id: TES,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: documento_financiero_controlador }
+      - { id: UC,   tipo: control,   ref: derivar_documento_interactor }
+      - { id: DREP, tipo: interface, ref: i_documento_financiero_repositorio }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: DOC,  tipo: entity,    ref: documento_financiero_erp }
+      - { id: CLI,  tipo: actor }
+    mensajes:
+      - { de: ECMS, a: CTRL, msg: "certificadoEmitido(certificadoId, tipo, monto)", tipo: async }
+      - { de: CTRL, a: UC,   msg: "derivar(certificadoId, tipo, monto)" }
+      - { de: UC,   a: DREP, msg: "buscarPorCertificado(certificadoId)" }
+      - { de: DREP, a: UC,   msg: "documento vinculado | nulo", tipo: return }
+      - { frag: alt, etiqueta: "el certificado ya tiene documento (RF-14)" }
+      - { de: UC,   a: CTRL, msg: "refiereDocumentoExistente(documentoId)", tipo: return }
+      - { frag: else, etiqueta: "certificado sin documento" }
+      - { de: UC,   a: DOC,  msg: "crear(tipo, numero, fecha, monto, estado = Registrado)", tipo: create }
+      - { de: UC,   a: DREP, msg: "guardar(documento)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, certificado, documento)" }
+      - { de: UC,   a: CTRL, msg: "documentoRegistrado(documentoId)", tipo: return }
+      - { frag: opt, etiqueta: "certificado interno: factura al cliente" }
+      - { de: CTRL, a: CLI,  msg: "entrega la factura del certificado", tipo: async }
+      - { frag: end }
+      - { frag: end }
+      - { frag: alt, etiqueta: "factura" }
+      - { de: TES,  a: CTRL, msg: "registrarCobro(documentoId)" }
+      - { de: CTRL, a: UC,   msg: "cobrar(documentoId, actorId)" }
+      - { de: UC,   a: DOC,  msg: "registrarCobro(fecha)" }
+      - { frag: else, etiqueta: "pago al subcontratista (PR-06)" }
+      - { de: TES,  a: CTRL, msg: "aprobarPago(documentoId)" }
+      - { de: CTRL, a: UC,   msg: "aprobarPago(documentoId, actorId)" }
+      - { de: UC,   a: DOC,  msg: "aprobarPago(fecha)" }
+      - { de: TES,  a: CTRL, msg: "ejecutarPago(documentoId)" }
+      - { de: CTRL, a: UC,   msg: "ejecutarPago(documentoId, actorId)" }
+      - { de: UC,   a: DOC,  msg: "pagar(fecha)" }
+      - { frag: end }
+      - { de: UC,   a: DREP, msg: "guardar(documento)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, documento, cobro o pago)" }
+      - { de: CTRL, a: TES,  msg: "confirma el estado del documento", tipo: return }
+  CU-11:
+    participantes:
+      - { id: SUP,    tipo: actor }
+      - { id: ADM,    tipo: actor }
+      - { id: CTRL,   tipo: boundary,  ref: movimiento_controlador }
+      - { id: UC,     tipo: control,   ref: movimiento_interactor }
+      - { id: LIM,    tipo: control,   ref: evaluar_limite_servicio }
+      - { id: ALM,    tipo: interface, ref: i_almacen_archivos }
+      - { id: MOVREP, tipo: interface, ref: i_movimiento_repositorio }
+      - { id: PREP,   tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: AUD,    tipo: interface, ref: i_auditoria_repositorio }
+      - { id: MOV,    tipo: entity,    ref: movimiento_presupuestario }
+      - { id: VER,    tipo: entity,    ref: version_presupuesto, objeto: nueva }
+      - { id: ANT,    tipo: entity,    ref: version_presupuesto, objeto: anterior }
+    mensajes:
+      - { de: SUP,    a: CTRL,   msg: "proponerMovimiento(obraId, objetivoId)" }
+      - { de: CTRL,   a: UC,     msg: "prepararPropuesta(objetivoId)" }
+      - { de: UC,     a: PREP,   msg: "buscarVersionVigente(obraId)" }
+      - { de: PREP,   a: UC,     msg: "{version_presupuesto} vigente con el saldo del objetivo", tipo: return }
+      - { de: UC,     a: CTRL,   msg: "tipos de movimiento y saldo vigente", tipo: return }
+      - { de: CTRL,   a: SUP,    msg: "muestra el formulario del movimiento", tipo: return }
+      - { de: SUP,    a: CTRL,   msg: "registrarPropuesta(causa, tipo, objetivoId, cantidad, precio, motivo, respaldo)" }
+      - { de: CTRL,   a: UC,     msg: "proponer(solicitudMovimiento, actorId)" }
+      - { de: UC,     a: ALM,    msg: "guardar(respaldo)" }
+      - { de: ALM,    a: UC,     msg: "ruta", tipo: return }
+      - { de: UC,     a: LIM,    msg: "evaluar(tipo, cantidad, precio, saldoVigente)" }
+      - { de: LIM,    a: UC,     msg: "efecto, límite, importe utilizado y saldo", tipo: return }
+      - { de: UC,     a: MOV,    msg: "crear(tipo, motivo, montoEfecto, limite, estado = Propuesto)", tipo: create }
+      - { de: UC,     a: MOVREP, msg: "guardar(movimiento)" }
+      - { de: UC,     a: CTRL,   msg: "movimientoPropuesto(movimientoId)", tipo: return }
+      - { de: CTRL,   a: SUP,    msg: "informa el movimiento propuesto", tipo: return }
+      - { de: ADM,    a: CTRL,   msg: "aprobarInterno(movimientoId)" }
+      - { de: CTRL,   a: UC,     msg: "aprobarInterno(movimientoId, actorId)" }
+      - { de: UC,     a: MOVREP, msg: "buscar(movimientoId)" }
+      - { de: MOVREP, a: UC,     msg: "{movimiento_presupuestario} Propuesto", tipo: return }
+      - { frag: alt, etiqueta: "datos completos y dentro del límite (RF-20)" }
+      - { de: UC,     a: MOV,    msg: "aprobarInterno(actorId, fecha)" }
+      - { de: UC,     a: MOVREP, msg: "guardar(movimiento)" }
+      - { de: UC,     a: CTRL,   msg: "aprobacionInternaRegistrada()", tipo: return }
+      - { frag: else, etiqueta: "datos incompletos o exceso sin excepción registrada" }
+      - { de: UC,     a: CTRL,   msg: "aprobacionImpedida(motivos)", tipo: return }
+      - { frag: end }
+      - { de: ADM,    a: CTRL,   msg: "registrarAprobacionContractual(movimientoId, respaldoCliente)" }
+      - { de: CTRL,   a: UC,     msg: "aprobarContractual(movimientoId, actorId)" }
+      - { de: UC,     a: MOV,    msg: "aprobarContractual(actorId, fecha, respaldoCliente)" }
+      - { de: UC,     a: MOVREP, msg: "guardar(movimiento)" }
+      - { de: UC,     a: CTRL,   msg: "aprobacionContractualRegistrada()", tipo: return }
+      - { de: ADM,    a: CTRL,   msg: "activarMovimiento(movimientoId)" }
+      - { de: CTRL,   a: UC,     msg: "activar(movimientoId, actorId)" }
+      - { de: UC,     a: VER,    msg: "crear(numero siguiente, líneas con el movimiento)", tipo: create }
+      - { de: UC,     a: VER,    msg: "activar(fecha)" }
+      - { de: UC,     a: ANT,    msg: "reemplazar()" }
+      - { de: UC,     a: MOV,    msg: "activar(versionId)" }
+      - { de: UC,     a: MOV,    msg: "cubrirPropuestasPendientes()" }
+      - { de: MOV,    a: UC,     msg: "{propuesta_pendiente} cubiertas, certificables (RF-22)", tipo: return }
+      - { de: UC,     a: PREP,   msg: "guardarVersion(version)" }
+      - { de: UC,     a: MOVREP, msg: "guardar(movimiento)" }
+      - { de: UC,     a: AUD,    msg: "registrar(actor, fecha, obra, version, movimiento)" }
+      - { de: UC,     a: CTRL,   msg: "versionVigente(versionId)", tipo: return }
+      - { de: CTRL,   a: ADM,    msg: "informa la versión nueva vigente", tipo: return }
+  CU-12:
+    participantes:
+      - { id: ADM,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: registrar_subcontrato_controlador }
+      - { id: UC,   tipo: control,   ref: registrar_subcontrato_interactor }
+      - { id: PREP, tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: SREP, tipo: interface, ref: i_subcontrato_repositorio }
+      - { id: EVT,  tipo: interface, ref: i_publicador_eventos }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: SBC,  tipo: entity,    ref: subcontrato }
+    mensajes:
+      - { de: ADM,  a: CTRL, msg: "nuevoSubcontrato(obraId)" }
+      - { de: CTRL, a: UC,   msg: "prepararAlta(obraId)" }
+      - { de: UC,   a: SREP, msg: "listarSocios(organizacionId)" }
+      - { de: SREP, a: UC,   msg: "socios de la organización", tipo: return }
+      - { de: UC,   a: PREP, msg: "buscarVersionVigente(obraId)" }
+      - { de: PREP, a: UC,   msg: "rubros e ítems de la {version_presupuesto} vigente", tipo: return }
+      - { de: UC,   a: CTRL, msg: "socios, rubros y precios", tipo: return }
+      - { de: CTRL, a: ADM,  msg: "muestra el formulario del subcontrato", tipo: return }
+      - { de: ADM,  a: CTRL, msg: "registrarSubcontrato(socioId, numero, monto, modalidad, alcance)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(solicitudSubcontrato, actorId)" }
+      - { frag: alt, etiqueta: "el alcance pertenece a la versión vigente y el número es nuevo (RF-23)" }
+      - { de: UC,   a: SBC,  msg: "crear(numero, montoContrato, modalidad, alcance)", tipo: create }
+      - { de: UC,   a: SREP, msg: "guardar(subcontrato)" }
+      - { de: UC,   a: EVT,  msg: "publicar(SubcontratoRegistrado(subcontratoId))", tipo: async }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, subcontrato, alta)" }
+      - { de: UC,   a: CTRL, msg: "subcontratoRegistrado(subcontratoId)", tipo: return }
+      - { frag: else, etiqueta: "rubro ajeno o número repetido" }
+      - { de: UC,   a: CTRL, msg: "datosInvalidos(detalle)", tipo: return }
+      - { frag: end }
+      - { de: CTRL, a: ADM,  msg: "informa el registro y su vínculo con el ERP", tipo: return }
+  CU-13:
+    participantes:
+      - { id: SUB,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: consultar_subcontrato_controlador }
+      - { id: UC,   tipo: control,   ref: consultar_subcontrato_interactor }
+      - { id: SREP, tipo: interface, ref: i_subcontrato_repositorio }
+      - { id: MREP, tipo: interface, ref: i_medicion_repositorio }
+      - { id: CREP, tipo: interface, ref: i_certificado_repositorio }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: SBC,  tipo: entity,    ref: subcontrato }
+    mensajes:
+      - { de: SUB,  a: CTRL, msg: "consultarContrato(subcontratoId)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(subcontratoId, actorId)" }
+      - { de: UC,   a: SREP, msg: "buscar(subcontratoId)" }
+      - { de: SREP, a: UC,   msg: "{subcontrato}", tipo: return }
+      - { de: UC,   a: SBC,  msg: "perteneceA(socioId)" }
+      - { de: SBC,  a: UC,   msg: "verdadero | falso", tipo: return }
+      - { frag: alt, etiqueta: "el contrato es del socio del actor (RNF-02)" }
+      - { de: UC,   a: MREP, msg: "listarPorSubcontrato(subcontratoId)" }
+      - { de: MREP, a: UC,   msg: "mediciones con ejecutor subcontratado", tipo: return }
+      - { de: UC,   a: CREP, msg: "listarPorSubcontrato(subcontratoId)" }
+      - { de: CREP, a: UC,   msg: "certificados de subcontrato con su {valorizacion}", tipo: return }
+      - { de: UC,   a: SBC,  msg: "saldoCertificable()" }
+      - { de: SBC,  a: UC,   msg: "monto certificado y saldo", tipo: return }
+      - { de: UC,   a: CTRL, msg: "estado del contrato", tipo: return }
+      - { frag: else, etiqueta: "contrato ajeno" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, subcontrato, acceso denegado)" }
+      - { de: UC,   a: CTRL, msg: "accesoDenegado()", tipo: return }
+      - { frag: end }
+      - { de: CTRL, a: SUB,  msg: "muestra solo los datos de su contrato", tipo: return }
+  CU-14:
+    participantes:
+      - { id: SUP,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: certificar_subcontrato_controlador }
+      - { id: UC,   tipo: control,   ref: certificar_subcontrato_interactor }
+      - { id: VLZ,  tipo: control,   ref: calcular_valorizacion_servicio }
+      - { id: SREP, tipo: interface, ref: i_subcontrato_repositorio }
+      - { id: MREP, tipo: interface, ref: i_medicion_repositorio }
+      - { id: CREP, tipo: interface, ref: i_certificado_repositorio }
+      - { id: EVT,  tipo: interface, ref: i_publicador_eventos }
+      - { id: AUD,  tipo: interface, ref: i_auditoria_repositorio }
+      - { id: CER,  tipo: entity,    ref: certificado }
+      - { id: SUB,  tipo: actor }
+    mensajes:
+      - { de: SUP,  a: CTRL, msg: "certificarSubcontrato(subcontratoId, periodoId)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(subcontratoId, periodoId, actorId)" }
+      - { de: UC,   a: SREP, msg: "buscar(subcontratoId)" }
+      - { de: SREP, a: UC,   msg: "{subcontrato} con precios y retenciones del contrato", tipo: return }
+      - { de: UC,   a: MREP, msg: "listarPorSubcontrato(subcontratoId)" }
+      - { de: MREP, a: UC,   msg: "mediciones aprobadas no certificadas (RF-10)", tipo: return }
+      - { de: UC,   a: CER,  msg: "crear(tipo = subcontrato, estado = Borrador)", tipo: create }
+      - { de: UC,   a: VLZ,  msg: "calcular(lineas, preciosContrato)" }
+      - { de: VLZ,  a: UC,   msg: "{valorizacion} contractual", tipo: return }
+      - { de: UC,   a: CTRL, msg: "valorización separada del costo y del precio de venta", tipo: return }
+      - { de: CTRL, a: SUP,  msg: "muestra la valorización del subcontrato", tipo: return }
+      - { de: SUP,  a: CTRL, msg: "emitirCertificado(certificadoId)" }
+      - { de: CTRL, a: UC,   msg: "emitir(certificadoId, actorId)" }
+      - { de: UC,   a: CREP, msg: "siguienteNumero(obraId)" }
+      - { de: CREP, a: UC,   msg: "numero", tipo: return }
+      - { de: UC,   a: CER,  msg: "emitir(numero, fecha, destinatario, actorId)" }
+      - { de: UC,   a: CREP, msg: "guardar(certificado)" }
+      - { de: UC,   a: AUD,  msg: "registrar(actor, fecha, obra, certificado, emisión)" }
+      - { de: UC,   a: EVT,  msg: "publicar(CertificadoEmitido(certificadoId))", tipo: async }
+      - { de: UC,   a: CTRL, msg: "certificado de subcontrato emitido", tipo: return }
+      - { de: CTRL, a: SUP,  msg: "confirma la emisión y el envío al ERP", tipo: return }
+      - { de: SUB,  a: CTRL, msg: "verCertificado(certificadoId)" }
+      - { de: CTRL, a: UC,   msg: "consultar(certificadoId, actorId)" }
+      - { de: UC,   a: CTRL, msg: "valorización de su contrato, sin precios internos (RNF-02)", tipo: return }
+      - { de: CTRL, a: SUB,  msg: "muestra el certificado emitido de su contrato", tipo: return }
+  CU-15:
+    participantes:
+      - { id: ING,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: calcular_costos_controlador }
+      - { id: UC,   tipo: control,   ref: calcular_costos_interactor }
+      - { id: VIA,  tipo: control,   ref: calcular_costo_via_servicio }
+      - { id: PREP, tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: ACU,  tipo: entity,    ref: analisis_costo_unitario }
+    mensajes:
+      - { de: ING,  a: CTRL, msg: "analizarCostos(obraId, fechaCorte)" }
+      - { de: CTRL, a: UC,   msg: "ejecutar(obraId, fechaCorte, actorId)" }
+      - { de: UC,   a: PREP, msg: "buscarVersionVigente(obraId)" }
+      - { de: PREP, a: UC,   msg: "{version_presupuesto} vigente", tipo: return }
+      - { de: UC,   a: PREP, msg: "listarACU(obraId)" }
+      - { de: PREP, a: UC,   msg: "análisis de costo unitario por ítem", tipo: return }
+      - { frag: loop, etiqueta: "por cada ítem y vía: materiales, mano de obra y equipos" }
+      - { de: UC,   a: VIA,  msg: "calcular(acu, via)" }
+      - { de: VIA,  a: ACU,  msg: "componentesPorVia(via)" }
+      - { de: ACU,  a: VIA,  msg: "{componente_acu} de la vía", tipo: return }
+      - { de: VIA,  a: UC,   msg: "costo del ítem por vía (RNF-06)", tipo: return }
+      - { frag: end }
+      - { de: UC,   a: CTRL, msg: "costos por obra, rubro e ítem frente al presupuesto vigente", tipo: return }
+      - { de: CTRL, a: ING,  msg: "muestra la comparación con fecha de corte, unidad y moneda", tipo: return }
+  CU-16:
+    participantes:
+      - { id: ADM,  tipo: actor }
+      - { id: CTRL, tipo: boundary,  ref: consultar_reportes_controlador }
+      - { id: UC,   tipo: control,   ref: consultar_reportes_interactor }
+      - { id: CRV,  tipo: control,   ref: generar_curva_s_servicio }
+      - { id: PREP, tipo: interface, ref: i_presupuesto_repositorio }
+      - { id: CONS, tipo: interface, ref: i_consulta_reportes }
+    mensajes:
+      - { de: ADM,  a: CTRL, msg: "consultarCurvaS(obraId, fechaCorte)" }
+      - { de: CTRL, a: UC,   msg: "curvaS(obraId, fechaCorte, actorId)" }
+      - { de: UC,   a: PREP, msg: "buscarVersionVigente(obraId)" }
+      - { de: PREP, a: UC,   msg: "{version_presupuesto} vigente", tipo: return }
+      - { de: UC,   a: CONS, msg: "avanceFisico(obraId, fechaCorte)" }
+      - { de: CONS, a: UC,   msg: "cantidades aprobadas ponderadas", tipo: return }
+      - { de: UC,   a: CONS, msg: "avanceFinanciero(obraId, fechaCorte)" }
+      - { de: CONS, a: UC,   msg: "importes certificados", tipo: return }
+      - { de: UC,   a: CONS, msg: "pendienteDeMovimiento(obraId, fechaCorte)" }
+      - { de: CONS, a: UC,   msg: "cantidades pendientes de movimiento vigente", tipo: return }
+      - { de: UC,   a: CRV,  msg: "componer(series, fechaCorte)" }
+      - { de: CRV,  a: UC,   msg: "tres series a la misma fecha de corte", tipo: return }
+      - { de: UC,   a: CTRL, msg: "Curva S con unidad, moneda y procedencia (RNF-11)", tipo: return }
+      - { de: CTRL, a: ADM,  msg: "muestra la Curva S", tipo: return }
+      - { de: ADM,  a: CTRL, msg: "consultarResumen(obraId, fechaCorte)" }
+      - { de: CTRL, a: UC,   msg: "resumen(obraId, fechaCorte, actorId)" }
+      - { de: UC,   a: CONS, msg: "resumenPorRubro(obraId, fechaCorte)" }
+      - { de: CONS, a: UC,   msg: "presupuesto, costos, certificaciones y saldos por rubro", tipo: return }
+      - { de: UC,   a: CTRL, msg: "resumen por obra y rubro", tipo: return }
+      - { de: CTRL, a: ADM,  msg: "muestra el resumen por rubro", tipo: return }
+      - { de: ADM,  a: CTRL, msg: "consultarRespaldo(cifraId)" }
+      - { de: CTRL, a: UC,   msg: "respaldo(cifraId)" }
+      - { de: UC,   a: CONS, msg: "respaldo(cifraId)" }
+      - { de: CONS, a: UC,   msg: "registro o documento fuente", tipo: return }
+      - { de: UC,   a: CTRL, msg: "respaldo de la cifra", tipo: return }
+      - { de: CTRL, a: ADM,  msg: "presenta el registro o documento fuente", tipo: return }
 
 # ------------------------------------------------------------------------------
 # REFERENCIAS (APA). Alimentan la última sección del documento.
@@ -1516,6 +2451,27 @@ decisiones:
       Facturas y pagos son parte de Obra Studio: el ERP es un contenedor del sistema (Motor ERP) y
       se modela el ciclo del {documento_financiero_erp}: Registrado, y luego Cobrado si es factura o
       Aprobado y Pagado si es pago, a cargo de Finanzas y Tesorería en CU-10.
+  - id: D-20
+    tema: Generalización de actores
+    hallazgo: >-
+      La plantilla pide un diagrama de generalización de actores, pero el modelo no declaraba
+      jerarquía. Un actor hijo hereda todos los casos de uso del padre, de modo que una jerarquía
+      con casos propios del padre daría a cada hijo metas que no tiene.
+    resolucion: >-
+      Se declaran dos padres abstractos sin casos de uso propios: Usuario de Obra, que agrupa al
+      Ingeniero de Obra, al Responsable Técnico y al Administrador por el acceso común de RNF-01, y
+      Motor de Obra Studio, que agrupa a los dos motores que actúan sin usuario (D-15). Subcontratista,
+      Cliente y Finanzas y Tesorería no generalizan: su acceso es distinto (RNF-02, PR-06).
+  - id: D-21
+    tema: Estados del período de medición
+    hallazgo: >-
+      RF-11 y RNF-03 hablan de cerrar el período y de no dejarlo parcialmente cerrado, y la entidad
+      declara el atributo estado, pero el modelo no tenía su máquina de estados; CU-04 y CU-06 la
+      necesitan en sus precondiciones.
+    resolucion: >-
+      Se declara el ciclo Abierto y Cerrado: el cierre ocurre en CU-06 con todas las mediciones
+      aprobadas y es atómico. Ningún caso de uso abre períodos; su apertura queda fuera del alcance
+      del catálogo.
 
 # ------------------------------------------------------------------------------
 # TRAZABILIDAD MODELO -> IMPLEMENTACIÓN (para el archivo de apoyo).

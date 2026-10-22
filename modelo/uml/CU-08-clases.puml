@@ -1,0 +1,86 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-08 — Corregir certificado emitido
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class CorregirCertificadoControlador <<Boundary>> {
+    +corregirCertificado(certificadoId)
+    +confirmarCorreccion(certificadoId, motivo, cambios)
+  }
+  class CertificadoPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class CorregirCertificadoInteractor <<Control>> {
+    +obtenerEmitido(certificadoId)
+    +ejecutar(certificadoId, motivo, cambios, actorId)
+  }
+  class CalcularValorizacionServicio <<Control>> {
+    +calcular(lineas, configuracionObra)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class Certificado <<Entity>> {
+  +id : UUID
+  -numero : String
+  -tipo : String
+  -fechaEmision : Date
+  -...
+    --
+    +corregir(revisionNueva)
+  }
+  class RevisionCertificado <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -fechaGeneracion : DateTime
+  -subtotal : Decimal
+  -/impuestos : Decimal
+  -/retenciones : Decimal
+  -/total : Decimal
+    --
+    +crear(numero = anterior + 1, revisionAnterior)
+  }
+  class LineaCertificado <<Entity>> {
+  +id : UUID
+  -cantidadPeriodo : Decimal
+  -precioUnitario : Decimal
+  -/importe : Decimal
+  -/cantidadAcumulada : Decimal
+  }
+  class Valorizacion <<ValueObject>> {
+  -subtotal : Decimal
+  -impuestos : Decimal
+  -retenciones : Decimal
+  -...
+  }
+  interface ICertificadoRepositorio <<Interface>> {
+  +buscarRevision(revisionId)
+  +guardar(certificado)
+  }
+  interface IAuditoriaRepositorio <<Interface>> {
+  +registrar(entrada)
+  }
+}
+
+CorregirCertificadoControlador --> CorregirCertificadoInteractor
+CorregirCertificadoInteractor --> CalcularValorizacionServicio
+CorregirCertificadoInteractor ..> CertificadoPresentador
+CorregirCertificadoInteractor ..> ICertificadoRepositorio
+CorregirCertificadoInteractor ..> IAuditoriaRepositorio
+CorregirCertificadoInteractor ..> Certificado
+Certificado "1" *-- "1..*" RevisionCertificado
+RevisionCertificado "1" *-- "1..*" LineaCertificado
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml

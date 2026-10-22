@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # Reproduce todos los diagramas y el documento desde modelo.yaml.
 # Requiere: uv (para pyyaml), plantuml (con la stdlib C4), graphviz, pandoc, libreoffice, poppler y java 21.
+# Sin plantuml en el PATH: PLANTUML="java -jar /ruta/plantuml.jar" ./build.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 RAIZ=".."
 STRUCTURIZR="$RAIZ/structurizr"
 WAR="$STRUCTURIZR/structurizr-application/target/structurizr-1.0.0.war"
 PY="uv run --quiet --with pyyaml python3"
+PLANTUML="${PLANTUML:-plantuml}"
+# PlantUML recorta en silencio todo lo que pase de 4096 px; el documento escala cada figura al ancho de página
+export PLANTUML_LIMIT_SIZE="${PLANTUML_LIMIT_SIZE:-16384}"
 
 echo "==> 1/8  Validando el modelo"
 $PY gen/validar.py
@@ -17,7 +21,7 @@ $PY gen/gen_puml.py
 
 echo "==> 3/8  Renderizando UML a PNG"
 rm -f out/*.png
-plantuml -tpng -o ../out uml/*.puml
+$PLANTUML -tpng -o ../out uml/*.puml
 
 echo "==> 4/8  Generando las vistas C4 (librería C4-PlantUML)"
 rm -f c4/*.puml out/c4/*.png
@@ -34,7 +38,7 @@ java -jar "$WAR" validate -w workspace.dsl
 java -jar "$WAR" inspect  -w workspace.dsl
 
 echo "==> 5/8  Renderizando las vistas C4 a PNG"
-plantuml -tpng -o ../out/c4 c4/*.puml
+$PLANTUML -tpng -o ../out/c4 c4/*.puml
 
 echo "==> 6/8  Generando el archivo de apoyo"
 $PY gen/gen_md.py
@@ -45,7 +49,7 @@ rm -f "$RAIZ/TPF-Obra-Studio.pdf"
 soffice --headless --convert-to pdf --outdir "$RAIZ" "$RAIZ/TPF-Obra-Studio.docx" > /dev/null 2>&1
 
 echo "==> 8/8  Verificando el documento contra el modelo"
-$PY gen/verificar_salida.py
+uv run --quiet --with pyyaml --with python-docx python3 gen/verificar_salida.py
 
 echo
 echo "Listo:"

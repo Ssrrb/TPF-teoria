@@ -1,0 +1,92 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Liberation Sans
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+hide circle
+title Caso de Uso CU-15 — Calcular costos por vía
+
+package "Adaptadores de interfaz" <<Rectangle>> {
+  class CalcularCostosControlador <<Boundary>> {
+    +analizarCostos(obraId, fechaCorte)
+  }
+  class CostosPresentador <<Boundary>> {
+    
+  }
+}
+package "Casos de uso" <<Rectangle>> {
+  class CalcularCostosInteractor <<Control>> {
+    +ejecutar(obraId, fechaCorte, actorId)
+  }
+  class CalcularCostoViaServicio <<Control>> {
+    +calcular(acu, via)
+  }
+}
+package "Dominio" <<Rectangle>> {
+  class AnalisisCostoUnitario <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -unidad : String
+  -/costoUnitario : Decimal
+  -...
+    --
+    +componentesPorVia(via)
+  }
+  class ComponenteACU <<Entity>> {
+  +id : UUID
+  -via : String
+  -descripcion : String
+  -unidad : String
+  -/subtotal : Decimal
+  -...
+  }
+  class LineaPresupuesto <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -descripcion : String
+  -tipo : String
+  -/importe : Decimal
+  -/cantidadMedida : Decimal
+  -/saldo : Decimal
+  -...
+  }
+  class VersionPresupuesto <<Entity>> {
+  +id : UUID
+  -numero : Integer
+  -estado : String
+  -fechaActivacion : DateTime
+  -/montoContractual : Decimal
+  }
+  class Obra <<Entity>> {
+  +id : UUID
+  -codigo : String
+  -nombre : String
+  -direccion : String
+  -...
+  }
+  interface IPresupuestoRepositorio <<Interface>> {
+  +buscarVersionVigente(obraId)
+  +listarACU(obraId)
+  }
+}
+
+CalcularCostosControlador --> CalcularCostosInteractor
+CalcularCostosInteractor --> CalcularCostoViaServicio
+CalcularCostosInteractor ..> CostosPresentador
+CalcularCostosInteractor ..> IPresupuestoRepositorio
+CalcularCostosInteractor ..> AnalisisCostoUnitario
+VersionPresupuesto "1" *-- "1..*" LineaPresupuesto
+LineaPresupuesto "0..1" -- "0..*" LineaPresupuesto
+AnalisisCostoUnitario "0..1" -- "0..*" LineaPresupuesto
+AnalisisCostoUnitario "1" *-- "1..*" ComponenteACU
+Obra "1" o-- "0..*" AnalisisCostoUnitario
+
+note as NInfra
+  La infraestructura implementa cada puerto del dominio.
+  Esa realización se documenta en la vista de componentes C4.
+end note
+@enduml
