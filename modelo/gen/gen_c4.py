@@ -47,13 +47,10 @@ def rel_personas(destino):
 def gen_contexto():
     L = cabecera("C4_Context", f"Contexto — {SIS} y su entorno")
     L += personas(None, None)
-    L.append(f'System(obra, "{SIS}", "Gestiona presupuesto, medición, certificación y costos de obra.")')
-    L.append('System_Ext(erp, "Sistema ERP", "Motor financiero y documental. Registra lo que el ECMS midió y certificó.")')
+    L.append(f'System(obra, "{SIS}", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")')
     L.append("")
     L += rel_personas("obra")
-    L.append('Rel(obra, erp, "Publica el certificado emitido", "Evento de dominio")')
-    L.append('Rel(erp, CLI, "Emite la factura del certificado", "Documento")') if "CLI" in actores else None
-    L.append('Rel(erp, TES, "Registra el cobro o el pago", "Documento")') if "TES" in actores else None
+    L.append('Rel(obra, CLI, "Emite la factura del certificado interno", "Documento")') if "CLI" in actores else None
     L.append("@enduml")
     escribir("C4-Contexto.puml", [x for x in L if x is not None])
 
@@ -61,10 +58,10 @@ def gen_contexto():
 def gen_contenedores():
     L = cabecera("C4_Container", f"Contenedores — {SIS}")
     L += personas(None, None)
-    L.append('System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")')
     L.append(f'System_Boundary(obra, "{SIS}") {{')
     L.append('  Container(web, "Aplicación Web", "React + TypeScript", "Formularios de carga, medición y certificación.")')
     L.append('  Container(ecms, "Motor ECMS", "TypeScript", "Reglas de obra, presupuesto, medición y certificación.")')
+    L.append("  " + CONTENEDOR["erp"])
     L.append('  ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")')
     L.append('  ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas de origen, evidencias y certificados exportados.")')
     L.append("}")
@@ -74,6 +71,7 @@ def gen_contenedores():
           'Rel(ecms, bd, "Lee y escribe", "SQL")',
           'Rel(ecms, archivos, "Conserva planillas, evidencias y exportaciones", "API de objetos")',
           'Rel(ecms, erp, "Publica el certificado emitido", "Evento de dominio")',
+          'Rel(erp, CLI, "Emite la factura del certificado interno", "Documento")',
           "@enduml"]
     escribir("C4-Contenedores.puml", L)
 
@@ -125,7 +123,7 @@ def gen_componentes():
     L.append('Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")')
     L.append('ContainerDb(bd, "Base de Datos", "PostgreSQL", "Datos del sistema.")')
     L.append('ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas y evidencias.")')
-    L.append('System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")')
+    L.append(CONTENEDOR["erp"])
     L.append('Container_Boundary(ecms, "Motor ECMS") {')
     for capa, (titulo, tec) in GRUPO.items():
         L.append(f'  Boundary({vid(capa)}_b, "{titulo}") {{')
@@ -177,7 +175,8 @@ def gen_dinamicas():
 
 # ------------------------------------------------- introducción por caso de uso
 CONTENEDOR = {"bd": 'ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")',
-              "archivos": 'ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas, evidencias y certificados exportados.")'}
+              "archivos": 'ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas, evidencias y certificados exportados.")',
+              "erp": 'Container(erp, "Motor ERP", "", "Facturas, pagos y avance físico-financiero de la obra.")'}
 ROL = {"bd": ("Lee y escribe", "SQL"), "archivos": ("Conserva archivos", "API de objetos"),
        "erp": ("Publica eventos de dominio", "Evento de dominio")}
 
@@ -190,11 +189,11 @@ def gen_intro_cu():
     for cid, c in casos.items():
         acts = _actores_cu(c)
         humanos = [a for a in acts if a["tipo"] != "sistema"]
-        externos = [a for a in acts if a["tipo"] == "sistema" and a["id"] != "ECMS"]
+        externos = [a for a in acts if a["tipo"] == "sistema" and not a.get("interno")]
         L = cabecera("C4_Context", f"{cid} — {c['nombre']}: contexto")
         for a in humanos:
             L.append(f'Person({a["id"]}, "{a["nombre"]}", "{q(corta(a))}")')
-        L.append(f'System(obra, "{SIS}", "Gestiona presupuesto, medición, certificación y costos de obra.")')
+        L.append(f'System(obra, "{SIS}", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")')
         for a in externos:
             L.append(f'System_Ext({a["id"]}, "{a["nombre"]}", "{q(corta(a))}")')
         L.append("")
@@ -215,12 +214,10 @@ def gen_intro_cu():
         L.append(f'System_Boundary(obra, "{SIS}") {{')
         L.append('  Container(web, "Aplicación Web", "React + TypeScript", "Formularios del caso de uso.")')
         L.append('  Container(ecms, "Motor ECMS", "TypeScript", "Reglas del caso de uso.")')
-        for k in ("bd", "archivos"):
+        for k in ("bd", "archivos", "erp"):
             if k in usa:
                 L.append("  " + CONTENEDOR[k])
         L.append("}")
-        if "erp" in usa:
-            L.append('System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")')
         L.append("")
         for a in humanos:
             L.append(f'Rel({a["id"]}, web, "{q(c["nombre"])}", "HTTPS")')

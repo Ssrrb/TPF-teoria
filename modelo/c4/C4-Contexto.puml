@@ -10,15 +10,12 @@ Person(SUB, "Subcontratista", "Consulta el estado de sus mediciones, certificado
 Person(CLI, "Cliente", "Comitente de la obra.")
 Person(TES, "Finanzas y Tesorería", "Opera dentro del ERP.")
 
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
-System_Ext(erp, "Sistema ERP", "Motor financiero y documental. Registra lo que el ECMS midió y certificó.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(ING, obra, "Carga el presupuesto, registra la medición oficial y emite certificados", "HTTPS")
 Rel(SUP, obra, "Aprueba mediciones y cierra el período", "HTTPS")
 Rel(ADM, obra, "Activa versiones, emite certificados y aprueba movimientos presupuestarios", "HTTPS")
 Rel(SUB, obra, "Consulta el estado de su contrato", "HTTPS")
 Rel(TES, obra, "Aprueba y ejecuta pagos y registra cobros", "HTTPS")
-Rel(obra, erp, "Publica el certificado emitido", "Evento de dominio")
-Rel(erp, CLI, "Emite la factura del certificado", "Documento")
-Rel(erp, TES, "Registra el cobro o el pago", "Documento")
+Rel(obra, CLI, "Emite la factura del certificado interno", "Documento")
 @enduml

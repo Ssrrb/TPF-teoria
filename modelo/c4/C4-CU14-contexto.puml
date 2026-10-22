@@ -5,10 +5,8 @@ title CU-14 — Certificar y valorizar subcontrato: contexto
 
 Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
 Person(SUB, "Subcontratista", "Consulta el estado de sus mediciones, certificados, valorizaciones y saldos.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
-System_Ext(ERP, "Motor ERP", "Motor financiero y documental de Obra Studio.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(SUP, obra, "Certificar y valorizar subcontrato")
 Rel(SUB, obra, "Certificar y valorizar subcontrato")
-Rel(obra, ERP, "Entrega el resultado del caso de uso")
 @enduml

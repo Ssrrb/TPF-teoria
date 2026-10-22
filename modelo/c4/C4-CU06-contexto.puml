@@ -4,7 +4,7 @@ LAYOUT_WITH_LEGEND()
 title CU-06 — Cerrar período de medición: contexto
 
 Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(SUP, obra, "Cerrar período de medición")
 @enduml

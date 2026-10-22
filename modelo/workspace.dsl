@@ -8,9 +8,7 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
         cli = person "Cliente" "Comitente de la obra."
         tes = person "Finanzas y Tesorería" "Opera dentro del ERP."
 
-        erpExterno = softwareSystem "Sistema ERP" "Motor financiero y documental. Registra lo que el ECMS midió y certificó." "Externo"
-
-        obraStudio = softwareSystem "Obra Studio" "Gestiona presupuesto, medición, certificación y costos de obra." {
+        obraStudio = softwareSystem "Obra Studio" "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra." {
             web = container "Aplicación Web" "Presenta los formularios de carga, medición y certificación." "React + TypeScript"
             ecms = container "Motor ECMS" "Reglas de obra, presupuesto, medición y certificación." "TypeScript" {
                 group "Adaptadores de interfaz" {
@@ -135,6 +133,7 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
             }
             bd = container "Base de Datos" "Obras, presupuestos, mediciones y certificados." "PostgreSQL" "Almacen"
             archivos = container "Almacén de Archivos" "Planillas de origen, evidencias y certificados exportados." "Almacenamiento de objetos" "Almacen"
+            erp = container "Motor ERP" "Facturas, pagos y avance físico-financiero de la obra."
 
             !docs docs
             !adrs decisiones
@@ -145,12 +144,11 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
         adm -> web "Activa versiones, emite certificados y aprueba movimientos presupuestarios" "HTTPS"
         sub -> web "Consulta el estado de su contrato" "HTTPS"
         tes -> web "Aprueba y ejecuta pagos y registra cobros" "HTTPS"
-        ecms -> erpExterno "Publica el certificado emitido para su documento financiero" "Evento de dominio"
+        ecms -> erp "Publica el certificado emitido para su documento financiero" "Evento de dominio"
         web -> ecms "Invoca los casos de uso" "HTTPS/JSON"
         ecms -> bd "Lee y escribe" "SQL"
         ecms -> archivos "Conserva planillas, evidencias y exportaciones" "API de objetos"
-        erpExterno -> cli "Emite la factura del certificado" "Documento"
-        erpExterno -> tes "Registra el cobro o el pago" "Documento"
+        erp -> cli "Emite la factura del certificado interno" "Documento"
 
         web -> crearObraControlador "nuevaObra(organizacionId)" "Llamada interna"
         crearObraControlador -> crearObraInteractor "prepararAlta(organizacionId)" "Llamada interna"
@@ -343,7 +341,7 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
     }
 
     views {
-        systemLandscape "Paisaje" "Obra Studio, el ERP y las personas que intervienen." {
+        systemLandscape "Paisaje" "Obra Studio y las personas que intervienen." {
             include *
             autolayout lr
         }

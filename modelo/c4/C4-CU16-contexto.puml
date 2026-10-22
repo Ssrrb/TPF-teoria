@@ -5,7 +5,7 @@ title CU-16 — Consultar reportes y Curva S: contexto
 
 Person(ADM, "Administrador", "Gerente de la obra.")
 Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(ADM, obra, "Consultar reportes y Curva S")
 Rel(SUP, obra, "Consultar reportes y Curva S")

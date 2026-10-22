@@ -4,7 +4,7 @@ LAYOUT_WITH_LEGEND()
 title CU-03 — Confirmar estructura y activar versión vigente: contexto
 
 Person(ADM, "Administrador", "Gerente de la obra.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(ADM, obra, "Confirmar estructura y activar versión vigente")
 @enduml

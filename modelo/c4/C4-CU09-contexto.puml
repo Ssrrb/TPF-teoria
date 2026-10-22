@@ -5,7 +5,7 @@ title CU-09 — Emitir certificado de avance: contexto
 
 Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia, genera y emite los certificados de avance y los corrige.")
 Person(ADM, "Administrador", "Gerente de la obra.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(ING, obra, "Emitir certificado de avance")
 Rel(ADM, obra, "Emitir certificado de avance")

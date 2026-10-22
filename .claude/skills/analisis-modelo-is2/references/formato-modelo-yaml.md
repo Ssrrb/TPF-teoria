@@ -25,7 +25,7 @@ Todo lo demás referencia por **id**. Dentro de un texto (mensajes de secuencia,
 | Sección | Qué contiene | Referencia por |
 |---|---|---|
 | `meta`, `alcance` | Portada del documento y módulos incluidos o excluidos | texto |
-| `actores` | `id`, `nombre`, `tipo` (primario, secundario, sistema), `externo`, `descripcion`, `uso` (relación con el sistema en C4 y Structurizr) | id de actor (`ING`, `SUP`…) |
+| `actores` | `id`, `nombre`, `tipo` (primario, secundario, sistema), `externo`, `interno` (actor sistema que es un motor de Obra Studio: va dentro del sistema en C4), `descripcion`, `uso` (relación con el sistema en C4 y Structurizr) | id de actor (`ING`, `SUP`…) |
 | `generalizacion_actores` | Padres abstractos: `id`, `nombre`, `descripcion`, `hijos` (ids de actores). No participan en casos de uso; cada hijo tiene un solo padre | ids de actor |
 | `requisitos` | `id` (RF-01…), `tipo` (RF, RNF, PR), `enunciado`, `casos_uso`, `redefinido: true` si cambió respecto del catálogo original | id de requisito y de caso de uso |
 | `subsistemas`, `casos_uso`, `relaciones_cu` | Catálogo; `detallado: true` exige ficha completa; `include` y `extend` solo dentro de un subsistema. En la ficha, `alternativos` y `excepciones` son listas de `{ id, paso?, requisito?, continua?, texto }`: `paso` es el paso del flujo normal donde se bifurca (después de la respuesta del sistema), `continua: true` (solo alternativas) indica que el camino vuelve al flujo normal y `texto` sigue la forma «Condición: consecuencia» | id de caso de uso |

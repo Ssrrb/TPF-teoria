@@ -5,7 +5,7 @@ title Componentes — capas de Clean Architecture en el Motor ECMS
 Container(web, "Aplicación Web", "React + TypeScript", "Interfaz de usuario.")
 ContainerDb(bd, "Base de Datos", "PostgreSQL", "Datos del sistema.")
 ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas y evidencias.")
-System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")
+Container(erp, "Motor ERP", "", "Facturas, pagos y avance físico-financiero de la obra.")
 Container_Boundary(ecms, "Motor ECMS") {
   Boundary(boundary_b, "Adaptadores de interfaz") {
     Component(CrearObraControlador, "CrearObraControlador", "Controller / Presenter")

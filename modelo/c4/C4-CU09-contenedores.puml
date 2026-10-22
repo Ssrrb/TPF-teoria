@@ -10,8 +10,8 @@ System_Boundary(obra, "Obra Studio") {
   Container(ecms, "Motor ECMS", "TypeScript", "Reglas del caso de uso.")
   ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")
   ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas, evidencias y certificados exportados.")
+  Container(erp, "Motor ERP", "", "Facturas, pagos y avance físico-financiero de la obra.")
 }
-System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")
 
 Rel(ING, web, "Emitir certificado de avance", "HTTPS")
 Rel(ADM, web, "Emitir certificado de avance", "HTTPS")

@@ -4,7 +4,7 @@ LAYOUT_WITH_LEGEND()
 title CU-13 — Consultar estado del subcontrato: contexto
 
 Person(SUB, "Subcontratista", "Consulta el estado de sus mediciones, certificados, valorizaciones y saldos.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(SUB, obra, "Consultar estado del subcontrato")
 @enduml

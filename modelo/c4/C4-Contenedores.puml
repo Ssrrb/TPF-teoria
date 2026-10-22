@@ -10,10 +10,10 @@ Person(SUB, "Subcontratista", "Consulta el estado de sus mediciones, certificado
 Person(CLI, "Cliente", "Comitente de la obra.")
 Person(TES, "Finanzas y Tesorería", "Opera dentro del ERP.")
 
-System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")
 System_Boundary(obra, "Obra Studio") {
   Container(web, "Aplicación Web", "React + TypeScript", "Formularios de carga, medición y certificación.")
   Container(ecms, "Motor ECMS", "TypeScript", "Reglas de obra, presupuesto, medición y certificación.")
+  Container(erp, "Motor ERP", "", "Facturas, pagos y avance físico-financiero de la obra.")
   ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")
   ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas de origen, evidencias y certificados exportados.")
 }
@@ -27,4 +27,5 @@ Rel(web, ecms, "Invoca los casos de uso", "HTTPS/JSON")
 Rel(ecms, bd, "Lee y escribe", "SQL")
 Rel(ecms, archivos, "Conserva planillas, evidencias y exportaciones", "API de objetos")
 Rel(ecms, erp, "Publica el certificado emitido", "Evento de dominio")
+Rel(erp, CLI, "Emite la factura del certificado interno", "Documento")
 @enduml

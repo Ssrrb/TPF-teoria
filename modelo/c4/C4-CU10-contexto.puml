@@ -5,10 +5,8 @@ title CU-10 — Derivar documento financiero en ERP: contexto
 
 Person(TES, "Finanzas y Tesorería", "Opera dentro del ERP.")
 Person(CLI, "Cliente", "Comitente de la obra.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
-System_Ext(ERP, "Motor ERP", "Motor financiero y documental de Obra Studio.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(TES, obra, "Derivar documento financiero en ERP")
 Rel(CLI, obra, "Derivar documento financiero en ERP")
-Rel(obra, ERP, "Entrega el resultado del caso de uso")
 @enduml

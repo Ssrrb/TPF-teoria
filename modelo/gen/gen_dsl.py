@@ -50,9 +50,7 @@ for aid, a in actores.items():
     corta = corta.split(". ")[0].rstrip(".") + "."
     w(f'        {vid(aid)} = person "{a["nombre"]}" "{corta}"')
 w("")
-w('        erpExterno = softwareSystem "Sistema ERP" "Motor financiero y documental. Registra lo que el ECMS midió y certificó." "Externo"')
-w("")
-w(f'        obraStudio = softwareSystem "{M["meta"]["sistema"]}" "Gestiona presupuesto, medición, certificación y costos de obra." {{')
+w(f'        obraStudio = softwareSystem "{M["meta"]["sistema"]}" "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra." {{')
 w('            web = container "Aplicación Web" "Presenta los formularios de carga, medición y certificación." "React + TypeScript"')
 w('            ecms = container "Motor ECMS" "Reglas de obra, presupuesto, medición y certificación." "TypeScript" {')
 for capa in ("boundary", "control", "entity", "puertos", "adapter"):
@@ -63,6 +61,7 @@ for capa in ("boundary", "control", "entity", "puertos", "adapter"):
 w("            }")
 w('            bd = container "Base de Datos" "Obras, presupuestos, mediciones y certificados." "PostgreSQL" "Almacen"')
 w('            archivos = container "Almacén de Archivos" "Planillas de origen, evidencias y certificados exportados." "Almacenamiento de objetos" "Almacen"')
+w('            erp = container "Motor ERP" "Facturas, pagos y avance físico-financiero de la obra."')
 w("")
 w("            !docs docs")
 w("            !adrs decisiones")
@@ -74,12 +73,11 @@ for cid, c in casos.items():
 for aid, a in actores.items():
     if a.get("uso"):
         w(f'        {vid(aid)} -> web "{a["uso"]}" "HTTPS"')
-w('        ecms -> erpExterno "Publica el certificado emitido para su documento financiero" "Evento de dominio"')
+w('        ecms -> erp "Publica el certificado emitido para su documento financiero" "Evento de dominio"')
 w('        web -> ecms "Invoca los casos de uso" "HTTPS/JSON"')
 w('        ecms -> bd "Lee y escribe" "SQL"')
 w('        ecms -> archivos "Conserva planillas, evidencias y exportaciones" "API de objetos"')
-w('        erpExterno -> cli "Emite la factura del certificado" "Documento"')
-w('        erpExterno -> tes "Registra el cobro o el pago" "Documento"')
+w('        erp -> cli "Emite la factura del certificado interno" "Documento"')
 w("")
 # relaciones entre componentes, derivadas de las secuencias
 vistas = set()
@@ -128,7 +126,7 @@ for cid, c in M["clases_cu"].items():
 w("    }")
 w("")
 w("    views {")
-w('        systemLandscape "Paisaje" "Obra Studio, el ERP y las personas que intervienen." {')
+w('        systemLandscape "Paisaje" "Obra Studio y las personas que intervienen." {')
 w("            include *"); w("            autolayout lr"); w("        }")
 w('        systemContext obraStudio "Contexto" "Obra Studio y su entorno." {')
 w("            include *"); w("            autolayout lr"); w("        }")

@@ -205,8 +205,8 @@ doc.add_page_break()
 h(1, "Modelo de Análisis")
 par(f'Este modelo describe el análisis de {meta["sistema"]}, sistema de gestión de obra que separa '
     f'dos motores: el ECMS mide la obra y el ERP registra lo que el ECMS midió. El alcance desarrollado '
-    f'comprende presupuesto, análisis de costo unitario, certificación y subcontratos, con facturas y '
-    f'pagos tratados como interacción con el ERP. La arquitectura de referencia es Clean Architecture; '
+    f'comprende presupuesto, análisis de costo unitario, certificación, subcontratos y las facturas y '
+    f'pagos que el ERP deriva de los certificados. La arquitectura de referencia es Clean Architecture; '
     f'sus anillos se proyectan sobre la notación de análisis mediante los estereotipos «Boundary» '
     f'(adaptadores de interfaz), «Control» (casos de uso) y «Entity» (dominio), y los puertos aparecen '
     f'como «Interface» realizados por la infraestructura.')

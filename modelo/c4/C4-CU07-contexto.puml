@@ -4,7 +4,7 @@ LAYOUT_WITH_LEGEND()
 title CU-07 — Generar borrador de certificado: contexto
 
 Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia, genera y emite los certificados de avance y los corrige.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(ING, obra, "Generar borrador de certificado")
 @enduml

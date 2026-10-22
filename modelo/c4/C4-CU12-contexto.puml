@@ -4,7 +4,7 @@ LAYOUT_WITH_LEGEND()
 title CU-12 — Registrar contrato de subcontrato: contexto
 
 Person(ADM, "Administrador", "Gerente de la obra.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(ADM, obra, "Registrar contrato de subcontrato")
 @enduml

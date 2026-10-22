@@ -6,7 +6,7 @@ title CU-11 — Proponer y aprobar movimiento presupuestario: contexto
 Person(ADM, "Administrador", "Gerente de la obra.")
 Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
 Person(CLI, "Cliente", "Comitente de la obra.")
-System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
+System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación, costos, facturas y pagos de obra.")
 
 Rel(ADM, obra, "Proponer y aprobar movimiento presupuestario")
 Rel(SUP, obra, "Proponer y aprobar movimiento presupuestario")
