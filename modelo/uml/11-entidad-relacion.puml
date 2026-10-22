@@ -205,6 +205,7 @@ entity "certificado" as certificado {
   * estado : VARCHAR(12)
   * periodo_id : UUID <<FK>>
     subcontrato_id : UUID <<FK>>
+    emitido_por : UUID <<FK>>
 }
 entity "revision_certificado" as revision_certificado {
   * id : UUID <<PK>>
@@ -229,7 +230,6 @@ entity "aprobacion" as aprobacion {
   * tipo : VARCHAR(24)
   * fecha : TIMESTAMPTZ
   * observacion : VARCHAR(400)
-    revision_certificado_id : UUID <<FK>>
     movimiento_id : UUID <<FK>>
   * actor_id : UUID <<FK>>
 }
@@ -305,7 +305,7 @@ certificado ||--|{ revision_certificado
 revision_certificado ||--|{ linea_certificado
 medicion_oficial ||--o| linea_certificado
 linea_presupuesto ||--o{ linea_certificado
-revision_certificado |o--o{ aprobacion
+usuario |o--o{ certificado : emite
 movimiento_presupuestario |o--o{ aprobacion
 usuario ||--o{ aprobacion
 revision_certificado ||--o{ retencion_aplicada

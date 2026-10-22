@@ -25,9 +25,9 @@ Todo lo demás referencia por **id**. Dentro de un texto (mensajes de secuencia,
 | Sección | Qué contiene | Referencia por |
 |---|---|---|
 | `meta`, `alcance` | Portada del documento y módulos incluidos o excluidos | texto |
-| `actores` | `id`, `nombre`, `tipo` (primario, secundario, sistema), `descripcion` | id de actor (`ING`, `SUP`…) |
-| `requisitos` | `id` (RF-01…), `tipo` (RF, RNF, PR), `enunciado`, `casos_uso` | id de requisito y de caso de uso |
-| `subsistemas`, `casos_uso`, `relaciones_cu` | Catálogo; `detallado: true` exige ficha completa; `include` y `extend` solo dentro de un subsistema | id de caso de uso |
+| `actores` | `id`, `nombre`, `tipo` (primario, secundario, sistema), `externo`, `descripcion`, `uso` (relación con el sistema en C4 y Structurizr) | id de actor (`ING`, `SUP`…) |
+| `requisitos` | `id` (RF-01…), `tipo` (RF, RNF, PR), `enunciado`, `casos_uso`, `redefinido: true` si cambió respecto del catálogo original | id de requisito y de caso de uso |
+| `subsistemas`, `casos_uso`, `relaciones_cu` | Catálogo; `detallado: true` exige ficha completa; `include` y `extend` solo dentro de un subsistema. En la ficha, `alternativos` y `excepciones` son listas de `{ id, paso?, requisito?, texto }`, donde `paso` es el paso del flujo normal donde se bifurca | id de caso de uso |
 | `entidades` | `id`, `nombre`, `paquete`, `tabla`, `atributos`; sin `tabla` es objeto de valor | `id` |
 | `relaciones` | `a`, `b` (ids de entidad), `tipo`, multiplicidades, `fk_en` (id de la entidad que lleva la clave), `fk_col`; `detalle: true` las omite del modelo conceptual | ids |
 | `puertos` | `id`, `nombre`, `metodos`, `adaptador` (id de componente) | `id` |
@@ -39,7 +39,7 @@ Todo lo demás referencia por **id**. Dentro de un texto (mensajes de secuencia,
 
 ## Qué valida `validar.py`
 
-Los 48 requisitos y su reparto, la trazabilidad en ambos sentidos, los actores sin uso, las relaciones include y extend, la ficha completa de los casos detallados, las clases por caso, las claves primarias y foráneas, las máquinas de estado (estados inalcanzables, transiciones a estados inexistentes), las secuencias (participantes declarados, fragmentos balanceados, cada mensaje debe ser un método declarado de la clase receptora) y las referencias por id.
+Los 48 requisitos y su reparto, la trazabilidad en ambos sentidos, los actores sin uso, las relaciones include y extend, la ficha completa de los casos detallados, que cada requisito citado en una alternativa o excepción esté marcado para ese CU y que su `paso` exista en el flujo, las clases por caso, las claves primarias y foráneas, las máquinas de estado (estados inalcanzables, transiciones a estados inexistentes), las secuencias (participantes declarados, fragmentos balanceados, cada mensaje debe ser un método declarado de la clase receptora) y las referencias por id.
 
 ## Vistas C4 que salen de este modelo
 

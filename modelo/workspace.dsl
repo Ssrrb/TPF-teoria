@@ -1,9 +1,9 @@
 workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — Ingeniería del Software 2." {
 
     model {
-        ing = person "Ingeniero de Obra" "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia y corrige los borradores devueltos."
+        ing = person "Ingeniero de Obra" "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia, genera y emite los certificados de avance y los corrige."
         sup = person "Responsable Técnico" "Supervisor de la obra."
-        adm = person "Administrador" "Configura la obra, sus impuestos y sus fondos de retención, autoriza la emisión del certificado sobre la revisión ya conformada, aprueba los movimientos presupuestarios y habilita la reapertura auditada."
+        adm = person "Administrador" "Gerente de la obra."
         sub = person "Subcontratista" "Presenta las mediciones correspondientes a su contrato y consulta el estado de sus mediciones, certificados y saldos."
         cli = person "Cliente" "Comitente de la obra."
         tes = person "Finanzas y Tesorería" "Opera dentro del ERP."
@@ -28,7 +28,6 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
                     aprobarMedicionInteractor = component "AprobarMedicionInteractor" "Orquesta el caso de uso sobre las entidades y los puertos. No conoce la infraestructura." "Interactor"
                     evaluarSaldoServicio = component "EvaluarSaldoServicio" "Orquesta el caso de uso sobre las entidades y los puertos. No conoce la infraestructura." "Interactor"
                     emitirCertificadoInteractor = component "EmitirCertificadoInteractor" "Orquesta el caso de uso sobre las entidades y los puertos. No conoce la infraestructura." "Interactor"
-                    verificarSeparacionFuncionesServicio = component "VerificarSeparacionFuncionesServicio" "Orquesta el caso de uso sobre las entidades y los puertos. No conoce la infraestructura." "Interactor"
                     calcularValorizacionServicio = component "CalcularValorizacionServicio" "Orquesta el caso de uso sobre las entidades y los puertos. No conoce la infraestructura." "Interactor"
                 }
                 group "Dominio: entidades" {
@@ -45,7 +44,6 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
                     certificado = component "Certificado" "Entidad del dominio: concentra la regla de negocio y sus invariantes." "Entidad de dominio"
                     revisionCertificado = component "RevisionCertificado" "Entidad del dominio: concentra la regla de negocio y sus invariantes." "Entidad de dominio"
                     lineaCertificado = component "LineaCertificado" "Entidad del dominio: concentra la regla de negocio y sus invariantes." "Entidad de dominio"
-                    aprobacion = component "Aprobacion" "Entidad del dominio: concentra la regla de negocio y sus invariantes." "Entidad de dominio"
                     retencionAplicada = component "RetencionAplicada" "Entidad del dominio: concentra la regla de negocio y sus invariantes." "Entidad de dominio"
                     configuracionObra = component "ConfiguracionObra" "Entidad del dominio: concentra la regla de negocio y sus invariantes." "Entidad de dominio"
                     fondoRetencion = component "FondoRetencion" "Entidad del dominio: concentra la regla de negocio y sus invariantes." "Entidad de dominio"
@@ -81,11 +79,11 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
             !adrs decisiones
         }
 
-        ing -> web "Carga el presupuesto y registra la medición oficial" "HTTPS"
-        sup -> web "Aprueba mediciones y otorga la conformidad técnica" "HTTPS"
-        adm -> web "Autoriza la emisión y aprueba movimientos presupuestarios" "HTTPS"
+        ing -> web "Carga el presupuesto, registra la medición oficial y emite certificados" "HTTPS"
+        sup -> web "Aprueba mediciones y cierra el período" "HTTPS"
+        adm -> web "Activa versiones, emite certificados y aprueba movimientos presupuestarios" "HTTPS"
         sub -> web "Presenta las mediciones de su contrato" "HTTPS"
-        ecms -> erpExterno "Publica el certificado aprobado para su documento financiero" "Evento de dominio"
+        ecms -> erpExterno "Publica el certificado emitido para su documento financiero" "Evento de dominio"
         web -> ecms "Invoca los casos de uso" "HTTPS/JSON"
         ecms -> bd "Lee y escribe" "SQL"
         ecms -> archivos "Conserva planillas, evidencias y exportaciones" "API de objetos"
@@ -114,12 +112,9 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
         emitirCertificadoControlador -> emitirCertificadoInteractor "obtenerRevision(revisionId)" "Llamada interna"
         emitirCertificadoInteractor -> iCertificadoRepositorio "buscarRevision(revisionId)" "Llamada interna"
         emitirCertificadoInteractor -> calcularValorizacionServicio "calcular(lineas, configuracionObra)" "Llamada interna"
-        emitirCertificadoInteractor -> aprobacion "crear(tipo, actorId, fecha)" "Llamada interna"
-        emitirCertificadoInteractor -> revisionCertificado "aprobaciones()" "Llamada interna"
-        emitirCertificadoInteractor -> verificarSeparacionFuncionesServicio "verificar(aprobaciones, actorId)" "Llamada interna"
-        emitirCertificadoInteractor -> certificado "aprobar(numero, fecha, destinatario)" "Llamada interna"
+        emitirCertificadoInteractor -> certificado "emitir(numero, fecha, destinatario, actorId)" "Llamada interna"
         emitirCertificadoInteractor -> iGeneradorDocumento "exportar(revision, formato)" "Llamada interna"
-        emitirCertificadoInteractor -> iPublicadorEventos "publicar(CertificadoAprobado(certificadoId))" "Llamada interna"
+        emitirCertificadoInteractor -> iPublicadorEventos "publicar(CertificadoEmitido(certificadoId))" "Llamada interna"
         presupuestoRepositorioSQL -> iPresupuestoRepositorio "Implementa" "Inyección de dependencias"
         almacenArchivosS3 -> iAlmacenArchivos "Implementa" "Inyección de dependencias"
         lectorPlanillaXLSX -> iLectorPlanilla "Implementa" "Inyección de dependencias"
@@ -148,7 +143,6 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
         revisionCertificado -> lineaCertificado "Se compone de (1 a 1..*)" "Referencia de dominio"
         medicionOficial -> lineaCertificado "Se asocia con (1 a 0..1)" "Referencia de dominio"
         lineaPresupuesto -> lineaCertificado "Se asocia con (1 a 0..*)" "Referencia de dominio"
-        revisionCertificado -> aprobacion "Se compone de (0..1 a 0..*)" "Referencia de dominio"
         revisionCertificado -> retencionAplicada "Se compone de (1 a 0..*)" "Referencia de dominio"
         fondoRetencion -> retencionAplicada "Se asocia con (1 a 0..*)" "Referencia de dominio"
         importarPresupuestoInteractor -> importacionPresentador "Entrega el resultado del caso de uso" "Llamada interna"
@@ -203,12 +197,9 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
             emitirCertificadoControlador -> emitirCertificadoInteractor "obtenerRevision(revisionId)"
             emitirCertificadoInteractor -> iCertificadoRepositorio "buscarRevision(revisionId)"
             emitirCertificadoInteractor -> calcularValorizacionServicio "calcular(lineas, configuracionObra)"
-            emitirCertificadoInteractor -> aprobacion "crear(tipo, actorId, fecha)"
-            emitirCertificadoInteractor -> revisionCertificado "aprobaciones()"
-            emitirCertificadoInteractor -> verificarSeparacionFuncionesServicio "verificar(aprobaciones, actorId)"
-            emitirCertificadoInteractor -> certificado "aprobar(numero, fecha, destinatario)"
+            emitirCertificadoInteractor -> certificado "emitir(numero, fecha, destinatario, actorId)"
             emitirCertificadoInteractor -> iGeneradorDocumento "exportar(revision, formato)"
-            emitirCertificadoInteractor -> iPublicadorEventos "publicar(CertificadoAprobado(certificadoId))"
+            emitirCertificadoInteractor -> iPublicadorEventos "publicar(CertificadoEmitido(certificadoId))"
             autolayout lr
         }
         image * "uml01casosdeusoA" {
@@ -270,10 +261,6 @@ workspace "Obra Studio" "Modelo de arquitectura del Trabajo Práctico Final — 
         image * "uml15estadoMovimientoPresupuestario" {
             image out/15-estado-MovimientoPresupuestario.png
             title "UML — 15-estado-MovimientoPresupuestario"
-        }
-        image * "uml16modeloconceptual" {
-            image out/16-modelo-conceptual.png
-            title "UML — 16-modelo-conceptual"
         }
 
         styles {

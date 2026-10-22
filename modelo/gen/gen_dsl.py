@@ -71,11 +71,10 @@ w("")
 # relaciones de contexto
 for cid, c in casos.items():
     pass
-w('        ing -> web "Carga el presupuesto y registra la medición oficial" "HTTPS"')
-w('        sup -> web "Aprueba mediciones y otorga la conformidad técnica" "HTTPS"')
-w('        adm -> web "Autoriza la emisión y aprueba movimientos presupuestarios" "HTTPS"')
-w('        sub -> web "Presenta las mediciones de su contrato" "HTTPS"')
-w('        ecms -> erpExterno "Publica el certificado aprobado para su documento financiero" "Evento de dominio"')
+for aid, a in actores.items():
+    if a.get("uso"):
+        w(f'        {vid(aid)} -> web "{a["uso"]}" "HTTPS"')
+w('        ecms -> erpExterno "Publica el certificado emitido para su documento financiero" "Evento de dominio"')
 w('        web -> ecms "Invoca los casos de uso" "HTTPS/JSON"')
 w('        ecms -> bd "Lee y escribe" "SQL"')
 w('        ecms -> archivos "Conserva planillas, evidencias y exportaciones" "API de objetos"')

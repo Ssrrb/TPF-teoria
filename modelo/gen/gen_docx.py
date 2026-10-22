@@ -271,9 +271,12 @@ def spec_tabla(c):
     for paso in c["flujo"]:
         fila([actores[paso["actor"]]["nombre"] if paso["actor"] in actores else paso["actor"],
               paso["accion"], paso["respuesta"]], combinar=(2, 3), negrita_0=False)
-    fila(["Excepciones",
-          "\n".join(f'{e["id"]} ({e["requisito"]}). {e["texto"]}' for e in c["excepciones"])],
+    def item(x):
+        ref = ([f'paso {x["paso"]}'] if x.get("paso") else []) + ([x["requisito"]] if x.get("requisito") else [])
+        return x["id"] + (f' ({", ".join(ref)})' if ref else "") + f'. {x["texto"]}'
+    fila(["Flujo Alternativo", "\n".join(map(item, c.get("alternativos") or [])) or "No tiene."],
          combinar=(1, 3))
+    fila(["Excepciones", "\n".join(map(item, c["excepciones"]))], combinar=(1, 3))
     return t
 
 fig = len(M["subsistemas"])

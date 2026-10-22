@@ -3,9 +3,9 @@
 LAYOUT_WITH_LEGEND()
 title Contexto — Obra Studio y su entorno
 
-Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia y corrige los borradores devueltos.")
+Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia, genera y emite los certificados de avance y los corrige.")
 Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
-Person(ADM, "Administrador", "Configura la obra, sus impuestos y sus fondos de retención, autoriza la emisión del certificado sobre la revisión ya conformada, aprueba los movimientos presupuestarios y habilita la reapertura auditada.")
+Person(ADM, "Administrador", "Gerente de la obra.")
 Person(SUB, "Subcontratista", "Presenta las mediciones correspondientes a su contrato y consulta el estado de sus mediciones, certificados y saldos.")
 Person(CLI, "Cliente", "Comitente de la obra.")
 Person(TES, "Finanzas y Tesorería", "Opera dentro del ERP.")
@@ -13,11 +13,11 @@ Person(TES, "Finanzas y Tesorería", "Opera dentro del ERP.")
 System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
 System_Ext(erp, "Sistema ERP", "Motor financiero y documental. Registra lo que el ECMS midió y certificó.")
 
-Rel(ING, obra, "Carga el presupuesto y registra la medición oficial", "HTTPS")
-Rel(SUP, obra, "Aprueba mediciones y otorga la conformidad técnica", "HTTPS")
-Rel(ADM, obra, "Autoriza la emisión y aprueba movimientos presupuestarios", "HTTPS")
+Rel(ING, obra, "Carga el presupuesto, registra la medición oficial y emite certificados", "HTTPS")
+Rel(SUP, obra, "Aprueba mediciones y cierra el período", "HTTPS")
+Rel(ADM, obra, "Activa versiones, emite certificados y aprueba movimientos presupuestarios", "HTTPS")
 Rel(SUB, obra, "Presenta las mediciones de su contrato", "HTTPS")
-Rel(obra, erp, "Publica el certificado aprobado", "Evento de dominio")
+Rel(obra, erp, "Publica el certificado emitido", "Evento de dominio")
 Rel(erp, CLI, "Emite la factura del certificado", "Documento")
 Rel(erp, TES, "Registra el cobro o el pago", "Documento")
 @enduml

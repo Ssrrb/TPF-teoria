@@ -3,7 +3,7 @@
 LAYOUT_WITH_LEGEND()
 title CU-02 — Importar presupuesto y cronograma: contenedores
 
-Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia y corrige los borradores devueltos.")
+Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia, genera y emite los certificados de avance y los corrige.")
 System_Boundary(obra, "Obra Studio") {
   Container(web, "Aplicación Web", "React + TypeScript", "Formularios del caso de uso.")
   Container(ecms, "Motor ECMS", "TypeScript", "Reglas del caso de uso.")

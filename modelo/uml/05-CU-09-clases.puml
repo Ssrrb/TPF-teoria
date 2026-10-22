@@ -12,8 +12,7 @@ title Caso de Uso CU-09 — Emitir certificado de avance
 package "Adaptadores de interfaz" <<Rectangle>> {
   class EmitirCertificadoControlador <<Boundary>> {
     +abrirRevision(revisionId)
-    +otorgarConformidadTecnica(revisionId)
-    +autorizarEmision(revisionId)
+    +emitirCertificado(revisionId, destinatario)
   }
   class CertificadoPresentador <<Boundary>> {
     
@@ -22,11 +21,7 @@ package "Adaptadores de interfaz" <<Rectangle>> {
 package "Casos de uso" <<Rectangle>> {
   class EmitirCertificadoInteractor <<Control>> {
     +obtenerRevision(revisionId)
-    +registrarAprobacion(revisionId, actorId, CONFORMIDAD_TECNICA)
-    +emitir(revisionId, actorId)
-  }
-  class VerificarSeparacionFuncionesServicio <<Control>> {
-    +verificar(aprobaciones, actorId)
+    +emitir(revisionId, destinatario, actorId)
   }
   class CalcularValorizacionServicio <<Control>> {
     +calcular(lineas, configuracionObra)
@@ -40,7 +35,7 @@ package "Dominio" <<Rectangle>> {
   -fechaEmision : Date
   -...
     --
-    +aprobar(numero, fecha, destinatario)
+    +emitir(numero, fecha, destinatario, actorId)
   }
   class RevisionCertificado <<Entity>> {
   +id : UUID
@@ -50,8 +45,6 @@ package "Dominio" <<Rectangle>> {
   -/impuestos : Decimal
   -/retenciones : Decimal
   -/total : Decimal
-    --
-    +aprobaciones()
   }
   class LineaCertificado <<Entity>> {
   +id : UUID
@@ -59,14 +52,6 @@ package "Dominio" <<Rectangle>> {
   -precioUnitario : Decimal
   -/importe : Decimal
   -/cantidadAcumulada : Decimal
-  }
-  class Aprobacion <<Entity>> {
-  +id : UUID
-  -tipo : String
-  -fecha : DateTime
-  -observacion : String
-    --
-    +crear(tipo, actorId, fecha)
   }
   class RetencionAplicada <<Entity>> {
   +id : UUID
@@ -113,7 +98,6 @@ package "Dominio" <<Rectangle>> {
 }
 
 EmitirCertificadoControlador --> EmitirCertificadoInteractor
-EmitirCertificadoInteractor --> VerificarSeparacionFuncionesServicio
 EmitirCertificadoInteractor --> CalcularValorizacionServicio
 EmitirCertificadoInteractor ..> CertificadoPresentador
 EmitirCertificadoInteractor ..> ICertificadoRepositorio
@@ -125,7 +109,6 @@ EmitirCertificadoInteractor ..> Certificado
 ConfiguracionObra "1" *-- "0..*" FondoRetencion
 Certificado "1" *-- "1..*" RevisionCertificado
 RevisionCertificado "1" *-- "1..*" LineaCertificado
-RevisionCertificado "0..1" *-- "0..*" Aprobacion
 RevisionCertificado "1" *-- "0..*" RetencionAplicada
 FondoRetencion "1" -- "0..*" RetencionAplicada
 

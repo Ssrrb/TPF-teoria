@@ -15,7 +15,7 @@ actor "Subcontratista" as SUB
 
 rectangle "Certificación y Subcontratos" {
   usecase "CU-07\nGenerar borrador de certificado" as CU_07
-  usecase "CU-08\nDevolver borrador para corrección" as CU_08
+  usecase "CU-08\nCorregir certificado emitido" as CU_08
   usecase "CU-09\nEmitir certificado de avance" as CU_09
   usecase "CU-10\nDerivar documento financiero en ERP" as CU_10
   usecase "CU-12\nRegistrar contrato de subcontrato" as CU_12
@@ -24,16 +24,14 @@ rectangle "Certificación y Subcontratos" {
   usecase "CU-16\nConsultar reportes y Curva S" as CU_16
 }
 
-actor "Cliente" as CLI
 actor "Motor de Ingeniería" as ECMS
 actor "Sistema ERP" as ERP
 actor "Finanzas y Tesorería" as TES
 
 ING --> CU_07
-SUP --> CU_08
-SUP --> CU_09
+ING --> CU_08
+ING --> CU_09
 ADM --> CU_09
-CU_09 --> CLI
 CU_10 --> ECMS
 CU_10 --> ERP
 CU_10 --> TES
@@ -45,8 +43,6 @@ CU_14 --> ERP
 ADM --> CU_16
 SUP --> CU_16
 
-CU_09 ..> CU_07 : <<include>>
 CU_09 ..> CU_10 : <<include>>
 CU_14 ..> CU_10 : <<include>>
-CU_08 ..> CU_09 : <<extend>>
 @enduml

@@ -5,19 +5,12 @@ skinparam defaultFontName Liberation Sans
 title Estados de Certificado
 
 state "Borrador" as Borrador
-Borrador : Generado desde mediciones aprobadas elegibles; editable.
+Borrador : En preparación o corrección; todavía no se emitió. Editable.
 state "Emitido" as Emitido
-Emitido : Presentado para conformidad técnica y autorización.
-state "Aprobado" as Aprobado
-Aprobado : Conformado y autorizado por actores distintos; origina el documento financiero ERP.
-state "Cerrado" as Cerrado
-Cerrado : Período liquidado; el certificado y sus fuentes permanecen consultables.
+Emitido : Con número, fecha y actor; visible en el avance físico-financiero de la obra y publicado al ERP.
 
 [*] --> Borrador
-Borrador --> Emitido : emitir revisión
-Emitido --> Borrador : devolver para corrección [observación registrada]
-Emitido --> Aprobado : autorizar [conformidad técnica de un actor distinto]
-Aprobado --> Cerrado : cerrar período
-Cerrado --> Borrador : reapertura autorizada [auditada; crea revisión vinculada]
-Cerrado --> [*]
+Borrador --> Emitido : emitir
+Emitido --> Borrador : corregir / crea revisión nueva y conserva la anterior
+Emitido --> [*]
 @enduml

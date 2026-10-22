@@ -50,7 +50,7 @@ else archivo nuevo
   UC --> CTRL : previsualizacion(estructura, totales, incidencias)
   CTRL --> ING : muestra estructura, ambos totales y datos inválidos
   deactivate CTRL
-  ING -> CTRL : confirmarEstructura(rubros, unidades, agrupaciones)
+  ING -> CTRL : confirmarImportacion(solicitudId)
   activate CTRL
   CTRL -> UC : confirmar(solicitudId)
   activate UC

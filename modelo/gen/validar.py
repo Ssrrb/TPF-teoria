@@ -92,9 +92,14 @@ for c in detallados:
             err(f"{cid} paso {i}: el actor '{paso['actor']}' no está entre los actores del caso de uso.")
         if not paso.get("accion") or not paso.get("respuesta"):
             err(f"{cid} paso {i}: falta acción o respuesta del sistema.")
-    for e in c.get("excepciones") or []:
-        if e.get("requisito") and e["requisito"] not in requisitos:
-            err(f"{cid} excepción {e.get('id')}: requisito {e['requisito']} inexistente.")
+    for e in (c.get("alternativos") or []) + (c.get("excepciones") or []):
+        r = e.get("requisito")
+        if r and r not in requisitos:
+            err(f"{cid} {e.get('id')}: requisito {r} inexistente.")
+        elif r and cid not in (requisitos[r].get("casos_uso") or []):
+            err(f"{cid} {e.get('id')}: cita {r}, que no está marcado para {cid} en la matriz.")
+        if "paso" in e and not 1 <= e["paso"] <= len(c.get("flujo") or []):
+            err(f"{cid} {e.get('id')}: el paso {e['paso']} no existe en el flujo normal.")
     # el caso detallado debe declarar sus clases
     if cid not in M["clases_cu"]:
         err(f"{cid} detallado sin entrada en clases_cu.")

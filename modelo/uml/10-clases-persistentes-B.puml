@@ -115,7 +115,6 @@ Certificado "1" *-- "1..*" RevisionCertificado
 RevisionCertificado "1" *-- "1..*" LineaCertificado
 MedicionOficial "1" -- "0..1" LineaCertificado
 LineaPresupuesto "1" -- "0..*" LineaCertificado
-RevisionCertificado "0..1" *-- "0..*" Aprobacion
 MovimientoPresupuestario "0..1" *-- "0..*" Aprobacion
 RevisionCertificado "1" *-- "0..*" RetencionAplicada
 FondoRetencion "1" -- "0..*" RetencionAplicada

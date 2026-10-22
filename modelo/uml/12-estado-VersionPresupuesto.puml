@@ -5,16 +5,16 @@ skinparam defaultFontName Liberation Sans
 title Estados de VersionPresupuesto
 
 state "Propuesta" as Propuesta
-Propuesta : Importada y confirmada en su estructura; todavía no rige.
+Propuesta : Importada y registrada; espera la confirmación de estructura y la activación.
 state "Vigente" as Vigente
 Vigente : Rige para medición, certificación y control de saldo.
 state "Reemplazada" as Reemplazada
 Reemplazada : Un movimiento aprobado generó una versión posterior; permanece consultable.
 state "Descartada" as Descartada
-Descartada : La importación no se confirmó; no llegó a regir.
+Descartada : El Administrador no confirmó su estructura; no llegó a regir.
 
 [*] --> Propuesta
-Propuesta --> Vigente : activar [estructura confirmada]
+Propuesta --> Vigente : confirmar estructura y activar [estructura confirmada]
 Propuesta --> Descartada : descartar
 Vigente --> Reemplazada : activar versión posterior
 Reemplazada --> [*]

@@ -3,9 +3,8 @@
 LAYOUT_WITH_LEGEND()
 title CU-09 — Emitir certificado de avance: contenedores
 
-Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
-Person(ADM, "Administrador", "Configura la obra, sus impuestos y sus fondos de retención, autoriza la emisión del certificado sobre la revisión ya conformada, aprueba los movimientos presupuestarios y habilita la reapertura auditada.")
-Person(CLI, "Cliente", "Comitente de la obra.")
+Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia, genera y emite los certificados de avance y los corrige.")
+Person(ADM, "Administrador", "Gerente de la obra.")
 System_Boundary(obra, "Obra Studio") {
   Container(web, "Aplicación Web", "React + TypeScript", "Formularios del caso de uso.")
   Container(ecms, "Motor ECMS", "TypeScript", "Reglas del caso de uso.")
@@ -14,11 +13,10 @@ System_Boundary(obra, "Obra Studio") {
 }
 System_Ext(erp, "Sistema ERP", "Motor financiero y documental.")
 
-Rel(SUP, web, "Emitir certificado de avance", "HTTPS")
+Rel(ING, web, "Emitir certificado de avance", "HTTPS")
 Rel(ADM, web, "Emitir certificado de avance", "HTTPS")
-Rel(CLI, web, "Emitir certificado de avance", "HTTPS")
 Rel(web, ecms, "Invoca el caso de uso", "HTTPS/JSON")
 Rel(ecms, bd, "Lee y escribe", "SQL")
 Rel(ecms, archivos, "Conserva archivos", "API de objetos")
-Rel(ecms, erp, "Publica el certificado aprobado", "Evento de dominio")
+Rel(ecms, erp, "Publica el certificado emitido", "Evento de dominio")
 @enduml

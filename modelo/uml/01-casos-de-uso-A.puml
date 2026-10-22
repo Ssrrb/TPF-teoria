@@ -23,6 +23,7 @@ rectangle "Presupuesto y Medición" {
   usecase "CU-15\nCalcular costos por vía" as CU_15
 }
 
+actor "Cliente" as CLI
 actor "Motor de Ingeniería" as ECMS
 
 ADM --> CU_01
@@ -33,9 +34,9 @@ SUP --> CU_05
 SUP --> CU_06
 ADM --> CU_11
 SUP --> CU_11
+CU_11 --> CLI
 ING --> CU_15
 CU_15 --> ECMS
 
-CU_02 ..> CU_03 : <<include>>
 CU_11 ..> CU_05 : <<extend>>
 @enduml

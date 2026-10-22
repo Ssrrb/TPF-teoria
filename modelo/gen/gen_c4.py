@@ -26,12 +26,8 @@ def corta(a):
     return d.split(". ")[0].rstrip(".") + "."
 
 PERSONAS = [a for a in M["actores"] if a["tipo"] != "sistema"]
-# Relaciones persona -> sistema (misma semántica que el workspace Structurizr previo)
-USO = {"ING": "Carga el presupuesto y registra la medición oficial",
-       "SUP": "Aprueba mediciones y otorga la conformidad técnica",
-       "ADM": "Autoriza la emisión y aprueba movimientos presupuestarios",
-       "SUB": "Presenta las mediciones de su contrato"}
-USO = {k: v for k, v in USO.items() if k in actores}
+# Relaciones persona -> sistema: campo 'uso' de cada actor en el YAML
+USO = {a["id"]: a["uso"] for a in M["actores"] if a.get("uso")}
 
 def cabecera(inc, titulo):
     return ["@startuml", f"!include <C4/{inc}>", "LAYOUT_WITH_LEGEND()", f"title {titulo}", ""]
@@ -54,7 +50,7 @@ def gen_contexto():
     L.append('System_Ext(erp, "Sistema ERP", "Motor financiero y documental. Registra lo que el ECMS midió y certificó.")')
     L.append("")
     L += rel_personas("obra")
-    L.append('Rel(obra, erp, "Publica el certificado aprobado", "Evento de dominio")')
+    L.append('Rel(obra, erp, "Publica el certificado emitido", "Evento de dominio")')
     L.append('Rel(erp, CLI, "Emite la factura del certificado", "Documento")') if "CLI" in actores else None
     L.append('Rel(erp, TES, "Registra el cobro o el pago", "Documento")') if "TES" in actores else None
     L.append("@enduml")
@@ -76,7 +72,7 @@ def gen_contenedores():
     L += ['Rel(web, ecms, "Invoca los casos de uso", "HTTPS/JSON")',
           'Rel(ecms, bd, "Lee y escribe", "SQL")',
           'Rel(ecms, archivos, "Conserva planillas, evidencias y exportaciones", "API de objetos")',
-          'Rel(ecms, erp, "Publica el certificado aprobado", "Evento de dominio")',
+          'Rel(ecms, erp, "Publica el certificado emitido", "Evento de dominio")',
           "@enduml"]
     escribir("C4-Contenedores.puml", L)
 
@@ -162,7 +158,7 @@ def gen_dinamicas():
 CONTENEDOR = {"bd": 'ContainerDb(bd, "Base de Datos", "PostgreSQL", "Obras, presupuestos, mediciones y certificados.")',
               "archivos": 'ContainerDb(archivos, "Almacén de Archivos", "Almacenamiento de objetos", "Planillas, evidencias y certificados exportados.")'}
 ROL = {"bd": ("Lee y escribe", "SQL"), "archivos": ("Conserva archivos", "API de objetos"),
-       "erp": ("Publica el certificado aprobado", "Evento de dominio")}
+       "erp": ("Publica el certificado emitido", "Evento de dominio")}
 
 def _actores_cu(c):
     return [actores[a] for a in c["actores"]]

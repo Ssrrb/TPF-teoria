@@ -20,8 +20,8 @@ meta:
   version: "1.0"
   autores:
     - { nombre: "Rojas, Sebastián" }
-    - { nombre: "Taveira" }
-    - { nombre: "Scotover" }
+    - { nombre: "Taveira, Baltazar" }
+    - { nombre: "Scotover, Leandro" }
 
 # ------------------------------------------------------------------------------
 # Alcance: módulos de Obra Studio que este modelo desarrolla.
@@ -64,59 +64,71 @@ vocabulario:
 
 # ------------------------------------------------------------------------------
 # ACTORES. Un id, un nombre. Todo diagrama los referencia por id.
-# tipo: primario | externo | sistema
+# tipo: primario | secundario | sistema; externo: true marca a quien no pertenece a la organización;
+# interno: true marca un actor sistema que es un motor de Obra Studio (contenedor en C4, D-15).
+# Un actor no es un rol: los roles del sistema son los de D-08.
+# uso: relación del actor con el sistema en las vistas C4 y en el workspace de Structurizr.
 # ------------------------------------------------------------------------------
 actores:
   - id: ING
     nombre: Ingeniero de Obra
     tipo: primario
+    uso: Carga el presupuesto, registra la medición oficial y emite certificados
     descripcion: >-
       Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem
-      del período con su evidencia y corrige los borradores devueltos. No aprueba su propia medición.
+      del período con su evidencia, genera y emite los certificados de avance y los corrige.
   - id: SUP
     nombre: Responsable Técnico
     tipo: primario
+    uso: Aprueba mediciones y cierra el período
     descripcion: >-
-      Supervisor de la obra. Aprueba o rechaza cada medición oficial, cierra el período y otorga la
-      conformidad técnica sobre la revisión del certificado. No puede autorizar la emisión que él mismo conformó.
+      Supervisor de la obra. Aprueba o rechaza cada medición oficial y cierra el período de medición.
   - id: ADM
     nombre: Administrador
     tipo: primario
+    uso: Activa versiones, emite certificados y aprueba movimientos presupuestarios
     descripcion: >-
-      Configura la obra, sus impuestos y sus fondos de retención, autoriza la emisión del certificado
-      sobre la revisión ya conformada, aprueba los movimientos presupuestarios y habilita la reapertura auditada.
+      Gerente de la obra. Configura la obra, sus impuestos y sus fondos de retención, activa la versión
+      de presupuesto, emite certificados de avance y aprueba los movimientos presupuestarios.
   - id: SUB
     nombre: Subcontratista
     tipo: primario
     externo: true
+    uso: Consulta el estado de su contrato
     descripcion: >-
-      Presenta las mediciones correspondientes a su contrato y consulta el estado de sus mediciones,
-      certificados y saldos. No accede a información de otros contratos ni a datos internos de la obra.
+      Consulta el estado de sus mediciones, certificados, valorizaciones y saldos. No registra
+      mediciones: las de su trabajo las mide en terreno y las carga el Ingeniero de Obra. No accede a
+      información de otros contratos ni a datos internos de la obra.
   - id: CLI
     nombre: Cliente
     tipo: secundario
     externo: true
     descripcion: >-
-      Comitente de la obra. Recibe el certificado de avance emitido y la factura que el ERP deriva de él.
+      Comitente de la obra. Acepta contractualmente los movimientos presupuestarios y recibe la factura
+      que el ERP deriva de lo certificado.
   - id: ECMS
     nombre: Motor de Ingeniería
     tipo: sistema
+    interno: true
     descripcion: >-
       Motor de obra de Obra Studio. Calcula los costos por vía de material, mano de obra y equipo a
-      partir del análisis de costo unitario, y publica el certificado aprobado para que el ERP
+      partir del análisis de costo unitario, y publica el certificado emitido para que el ERP
       derive su documento financiero. Es la fuente de verdad de la medición.
   - id: ERP
-    nombre: Sistema ERP
+    nombre: Motor ERP
     tipo: sistema
+    interno: true
     descripcion: >-
-      Motor financiero y documental. Recibe los certificados aprobados y genera la factura al cliente
-      o el pago al subcontratista. Es dueño de los documentos legales; no calcula costo de obra.
+      Motor financiero y documental de Obra Studio. Recibe los certificados emitidos, los refleja en
+      el avance físico-financiero de la obra y genera la factura al cliente a partir del certificado
+      interno o el pago al subcontratista. Es dueño de los documentos legales; no calcula costo de obra.
   - id: TES
     nombre: Finanzas y Tesorería
     tipo: secundario
+    uso: Aprueba y ejecuta pagos y registra cobros
     descripcion: >-
       Opera dentro del ERP. Aprueba y ejecuta pagos y registra cobros a partir de los documentos
-      derivados de un certificado aprobado.
+      derivados de un certificado emitido.
 
 # ------------------------------------------------------------------------------
 # REQUISITOS. 48 identificadores: RF-01..28, RNF-01..12, PR-01..08.
@@ -247,18 +259,20 @@ requisitos:
   - id: RF-16
     tipo: RF
     origen: Wiki
+    redefinido: true
     enunciado: >-
-      El sistema permitirá devolver un borrador para corrección y conservará revisiones y
-      decisiones anteriores.
-    criterio: La corrección mantiene vínculo con el antecedente.
+      El sistema permitirá corregir un certificado emitido creando una revisión nueva vinculada y
+      conservando las revisiones anteriores.
+    criterio: La corrección mantiene vínculo con el antecedente y no lo sobrescribe.
     casos_uso: [CU-08]
   - id: RF-17
     tipo: RF
     origen: Complemento
+    redefinido: true
     enunciado: >-
-      El sistema exigirá conformidad técnica y autorización de una persona distinta sobre la misma
-      revisión antes de emitir el certificado de avance.
-    criterio: La emisión se bloquea si falta una aprobación o ambas son del mismo actor.
+      El sistema permitirá emitir el certificado de avance solo a usuarios con rol admin o miembro
+      con acceso al ECMS, y registrará quién lo emitió y cuándo.
+    criterio: Un visualizador no puede emitir; cada emisión identifica a su actor y su fecha.
     casos_uso: [CU-09]
   - id: RF-18
     tipo: RF
@@ -295,12 +309,12 @@ requisitos:
   - id: RF-22
     tipo: RF
     origen: Wiki
+    redefinido: true
     enunciado: >-
       El sistema certificará cantidades pendientes solo después de que un movimiento aprobado las
-      cubra; corregirá un certificado cerrado mediante reapertura autorizada y auditada, creando
-      una revisión vinculada y preservando el original.
-    criterio: La nueva cantidad usa la versión vigente y la revisión corregida conserva el vínculo con el original.
-    casos_uso: [CU-09, CU-11]
+      cubra.
+    criterio: La nueva cantidad certificable usa la versión vigente que refleja el movimiento.
+    casos_uso: [CU-07, CU-11]
   - id: RF-23
     tipo: RF
     origen: Wiki
@@ -312,10 +326,12 @@ requisitos:
   - id: RF-24
     tipo: RF
     origen: Wiki
+    redefinido: true
     enunciado: >-
-      El sistema permitirá al subcontratista presentar mediciones de su contrato y consultar solo
-      el estado de sus mediciones, certificados, valorizaciones y saldos.
-    criterio: No puede registrar rubros ajenos ni consultar otro contrato.
+      El sistema permitirá al subcontratista consultar solo el estado de sus mediciones,
+      certificados, valorizaciones y saldos; las mediciones de su trabajo las registra el Ingeniero
+      de Obra.
+    criterio: No puede registrar mediciones ni consultar otro contrato.
     casos_uso: [CU-13]
   - id: RF-25
     tipo: RF
@@ -388,11 +404,12 @@ requisitos:
   - id: RNF-05
     tipo: RNF
     origen: Wiki
+    redefinido: true
     enunciado: >-
-      Los certificados cerrados y las versiones que los originaron permanecerán consultables; una
-      corrección requiere reapertura autorizada, auditoría y revisión nueva.
-    criterio: El original no se sobrescribe y la corrección queda enlazada.
-    casos_uso: [CU-09]
+      Los certificados emitidos y las versiones que los originaron permanecerán consultables; una
+      corrección crea una revisión nueva.
+    criterio: La revisión anterior no se sobrescribe y la corrección queda enlazada.
+    casos_uso: [CU-08, CU-09]
   - id: RNF-06
     tipo: RNF
     origen: Wiki
@@ -400,7 +417,7 @@ requisitos:
       Los cálculos monetarios usarán aritmética decimal y producirán el mismo resultado para
       iguales entradas, parámetros y versiones.
     criterio: Repetir el cálculo con la misma instantánea devuelve el mismo importe.
-    casos_uso: [CU-07, CU-14, CU-15]
+    casos_uso: [CU-07, CU-09, CU-14, CU-15]
   - id: RNF-07
     tipo: RNF
     origen: Complemento
@@ -423,7 +440,7 @@ requisitos:
       Los formularios de medición podrán utilizarse desde un teléfono e identificar campos
       requeridos y errores de carga.
     criterio: El escenario de medición puede completarse desde vista móvil.
-    casos_uso: [CU-04, CU-13]
+    casos_uso: [CU-04]
   - id: RNF-10
     tipo: RNF
     origen: Complemento
@@ -529,18 +546,19 @@ casos_uso:
     detallado: true
     creado_por: "Rojas, Sebastián"
     fecha_creacion: "2026-06-01"
-    modificado_por: "Taveira"
+    modificado_por: "Taveira, Baltazar"
     fecha_modificacion: "2026-06-15"
     descripcion: >-
       El Ingeniero de Obra carga el archivo XLSX de presupuesto y cronograma de una obra. El
       sistema reconoce su estructura, contrasta los totales declarados contra los recalculados,
-      informa los datos inválidos y, tras la confirmación del actor, registra una versión nueva
-      conservando el archivo original y las versiones anteriores.
+      informa los datos inválidos y, tras la confirmación del actor, registra una versión nueva en
+      estado Propuesta, conservando el archivo original y las versiones anteriores. La activación
+      de la versión corresponde a CU-03.
     precondiciones:
       - La obra existe y el actor tiene un rol vigente sobre ella.
       - El archivo contiene las hojas de presupuesto y de cronograma.
     poscondiciones:
-      - Queda registrada una versión de presupuesto nueva con su archivo de origen y su informe de importación.
+      - Queda registrada una versión de presupuesto nueva, en estado Propuesta, con su archivo de origen y su informe de importación.
       - Las versiones anteriores permanecen consultables y sin alteración.
       - Si el archivo ya fue importado, no se crea una versión nueva.
     flujo:
@@ -548,14 +566,14 @@ casos_uso:
       - { actor: ING, accion: "Adjunta el archivo XLSX de presupuesto y cronograma.", respuesta: "Calcula el hash SHA-256 del contenido y comprueba que no corresponda a una versión ya registrada." }
       - { actor: ING, accion: "Confirma la carga.", respuesta: "Identifica hojas y columnas, reconoce rubros, subrubros e ítems, conserva el archivo original sin modificarlo y recalcula los totales." }
       - { actor: ING, accion: "Revisa la estructura reconocida y la comparación de totales.", respuesta: "Muestra el total declarado y el total recalculado por rubro y general, y señala cada dato obligatorio inválido indicando hoja, fila y columna." }
-      - { actor: ING, accion: "Confirma rubros, unidades y agrupaciones.", respuesta: "Registra una versión de presupuesto nueva con su archivo de origen y su informe de importación." }
-      - { actor: ING, accion: "Solicita activar la versión.", respuesta: "Incluye CU-03: valida la estructura confirmada y deja la versión como vigente, conservando las anteriores." }
+      - { actor: ING, accion: "Confirma la importación.", respuesta: "Registra una versión de presupuesto nueva en estado Propuesta con su archivo de origen y su informe de importación, pendiente de activación." }
+    alternativos:
+      - { id: A1, paso: 2, requisito: RNF-07, texto: "Archivo ya importado: el hash coincide con una versión existente; el sistema no crea una versión nueva y refiere la versión que corresponde a ese archivo." }
+      - { id: A2, paso: 4, requisito: RF-04, texto: "Diferencia entre el total declarado y el recalculado: el sistema exige confirmación explícita; sin confirmación descarta la importación y no registra versión." }
     excepciones:
       - { id: E1, requisito: RF-03, texto: "Dato obligatorio inválido: el sistema informa hoja, fila y columna, no registra versión y permite corregir el archivo y reintentar." }
-      - { id: E2, requisito: RNF-07, texto: "Archivo ya importado: el hash coincide con una versión existente; el sistema no crea una versión nueva y refiere la versión que corresponde a ese archivo." }
-      - { id: E3, requisito: RF-04, texto: "Diferencia entre el total declarado y el recalculado: el sistema exige confirmación explícita; sin confirmación descarta la importación y no registra versión." }
-      - { id: E4, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la operación y registra el intento." }
-      - { id: E5, requisito: RNF-03, texto: "Operación interrumpida: no queda una versión parcial; la obra conserva íntegra su versión vigente anterior." }
+      - { id: E2, requisito: RNF-01, texto: "El actor no tiene rol vigente sobre la obra: el sistema deniega la operación y registra el intento." }
+      - { id: E3, texto: "Operación interrumpida: no queda una versión parcial; la obra conserva íntegra su versión vigente anterior." }
   - id: CU-03
     nombre: Confirmar estructura y activar versión vigente
     subsistema: A
@@ -573,7 +591,7 @@ casos_uso:
     detallado: true
     creado_por: "Rojas, Sebastián"
     fecha_creacion: "2026-06-01"
-    modificado_por: "Scotover"
+    modificado_por: "Scotover, Leandro"
     fecha_modificacion: "2026-06-15"
     descripcion: >-
       El Responsable Técnico revisa cada medición oficial registrada en el período, la contrasta
@@ -582,8 +600,7 @@ casos_uso:
       presupuestario aprobado lo cubra.
     precondiciones:
       - Existe al menos una medición oficial registrada en el período.
-      - El actor tiene rol de Responsable Técnico vigente sobre la obra.
-      - El actor es distinto de quien registró la medición.
+      - El actor tiene un rol vigente sobre la obra.
     poscondiciones:
       - Cada medición queda aprobada o rechazada, con decisión, actor, fecha y versión de presupuesto.
       - El acumulado físico del ítem se incrementa una sola vez por la cantidad aprobada.
@@ -594,12 +611,12 @@ casos_uso:
       - { actor: SUP, accion: "Aprueba la medición.", respuesta: "Compara la cantidad medida con el saldo de la versión vigente y determina la cantidad certificable." }
       - { actor: SUP, accion: "Confirma la decisión.", respuesta: "Registra la medición como aprobada con decisión, actor, fecha y versión, e incrementa el acumulado físico una sola vez." }
       - { actor: SUP, accion: "Repite la revisión para las mediciones restantes del período.", respuesta: "Actualiza el estado del período y habilita su cierre cuando no quedan mediciones pendientes." }
+    alternativos:
+      - { id: A1, paso: 3, requisito: RF-09, texto: "La cantidad supera el saldo del presupuesto vigente: el sistema aprueba solo la parte cubierta y registra el exceso como propuesta pendiente, que no integra la medición oficial certificable hasta que un movimiento aprobado la cubra. Punto de extensión: CU-11, donde el sobrecosto se clasifica como adenda, cubierta por un movimiento presupuestario, o por otra causa (retrabajo, atraso, fallo o cambio)." }
+      - { id: A2, paso: 3, requisito: RF-08, texto: "Rechazo: el actor indica el motivo; el sistema registra la medición como rechazada con decisión, actor y fecha, y la devuelve al Ingeniero de Obra." }
     excepciones:
-      - { id: E1, requisito: RF-09, texto: "La cantidad supera el saldo del presupuesto vigente: el sistema aprueba solo la parte cubierta y registra el exceso como propuesta pendiente, que no integra la medición oficial certificable hasta que un movimiento aprobado la cubra." }
-      - { id: E2, requisito: RF-08, texto: "Rechazo: el actor indica el motivo; el sistema registra la medición como rechazada con decisión, actor y fecha, y la devuelve al Ingeniero de Obra." }
-      - { id: E3, requisito: RF-10, texto: "Cantidad ya contabilizada: el sistema impide registrar una segunda medición para el mismo ítem y período, aunque la ejecute un subcontratista." }
-      - { id: E4, requisito: RNF-01, texto: "El actor coincide con quien registró la medición o carece de rol vigente: el sistema deniega la aprobación." }
-      - { id: E5, requisito: RNF-03, texto: "Operación interrumpida: la medición conserva íntegro su estado anterior y el período no queda parcialmente resuelto." }
+      - { id: E1, requisito: RNF-01, texto: "El actor carece de rol vigente sobre la obra: el sistema deniega la aprobación." }
+      - { id: E2, texto: "Operación interrumpida: la medición conserva íntegro su estado anterior y el período no queda parcialmente resuelto." }
   - id: CU-06
     nombre: Cerrar período de medición
     subsistema: A
@@ -611,54 +628,48 @@ casos_uso:
     actores: [ING]
     detallado: false
   - id: CU-08
-    nombre: Devolver borrador para corrección
+    nombre: Corregir certificado emitido
     subsistema: B
-    actores: [SUP]
+    actores: [ING]
     detallado: false
   - id: CU-09
     nombre: Emitir certificado de avance
     subsistema: B
-    actores: [SUP, ADM, CLI]
+    actores: [ING, ADM]
     detallado: true
     creado_por: "Rojas, Sebastián"
     fecha_creacion: "2026-06-01"
-    modificado_por: "Taveira"
+    modificado_por: "Taveira, Baltazar"
     fecha_modificacion: "2026-06-15"
     descripcion: >-
-      El Responsable Técnico otorga la conformidad técnica sobre la revisión del certificado y el
-      Administrador, que debe ser una persona distinta, autoriza su emisión. El sistema asigna
-      número, fecha y destinatario, genera el archivo exportado de la revisión emitida y publica el
-      evento que el ERP consume para registrar el documento financiero derivado.
+      El Ingeniero de Obra o el Administrador emite el certificado de avance sobre una revisión en
+      borrador. El sistema asigna número, fecha y destinatario, registra quién lo emitió, genera el
+      archivo exportado de la revisión emitida y publica el evento que el ERP consume para reflejar
+      el certificado en el avance físico-financiero de la obra y registrar su documento derivado.
     precondiciones:
-      - Existe una revisión de certificado generada a partir de mediciones aprobadas y elegibles.
-      - El período del certificado está cerrado.
+      - Existe una revisión de certificado en Borrador generada a partir de mediciones aprobadas y elegibles (CU-07).
       - La configuración de impuestos y fondos de la obra está vigente.
+      - El actor tiene rol admin o miembro con acceso al ECMS.
     poscondiciones:
-      - El certificado queda aprobado con número, fecha, destinatario y revisión identificada.
-      - Queda registrada la conformidad técnica y la autorización, cada una con su actor y fecha.
-      - Se genera un archivo nuevo de exportación y el evento que vincula el certificado con su documento financiero ERP.
+      - El certificado queda Emitido con número, fecha, destinatario, revisión identificada y actor que lo emitió.
+      - Se genera un archivo nuevo de exportación y el evento que vincula el certificado con su documento ERP.
     flujo:
-      - { actor: SUP, accion: "Abre la revisión del certificado del período.", respuesta: "Muestra las cantidades certificables, la valorización con precio de venta vigente, impuestos, fondos y las alertas del borrador." }
-      - { actor: SUP, accion: "Otorga la conformidad técnica sobre la revisión.", respuesta: "Registra la conformidad con su actor y su fecha, asociada a esa revisión." }
-      - { actor: ADM, accion: "Abre la misma revisión y verifica la valorización.", respuesta: "Comprueba que exista conformidad técnica y que su actor sea distinto de quien autoriza." }
-      - { actor: ADM, accion: "Autoriza la emisión.", respuesta: "Asigna número y fecha, registra el destinatario y deja el certificado aprobado sobre esa revisión." }
-      - { actor: ADM, accion: "Solicita la exportación del certificado.", respuesta: "Genera un archivo nuevo en formato XLSX o PDF correspondiente a la revisión emitida, sin sobrescribir sus fuentes." }
-      - { actor: ADM, accion: "Confirma la emisión.", respuesta: "Incluye CU-10: publica el evento de certificado aprobado para que el ERP registre el documento financiero vinculado y lo remita al Cliente." }
+      - { actor: ING, accion: "Abre la revisión en borrador del certificado.", respuesta: "Muestra las cantidades certificables, la valorización con precio de venta vigente, impuestos, fondos y las alertas del borrador." }
+      - { actor: ING, accion: "Emite el certificado.", respuesta: "Asigna número y fecha, registra el destinatario y el actor que emite, y deja el certificado Emitido sobre esa revisión." }
+      - { actor: ING, accion: "Solicita la exportación del certificado.", respuesta: "Genera un archivo nuevo en formato XLSX o PDF correspondiente a la revisión emitida, sin sobrescribir sus fuentes." }
+      - { actor: ING, accion: "Confirma la emisión.", respuesta: "Incluye CU-10: publica el evento de certificado emitido para que el ERP lo refleje en el avance físico-financiero y registre su documento vinculado." }
     excepciones:
-      - { id: E1, requisito: RF-17, texto: "Falta la conformidad técnica o la autorización, o ambas corresponden al mismo actor: el sistema bloquea la emisión e indica cuál aprobación falta." }
-      - { id: E2, requisito: RF-16, texto: "Devolución para corrección: extiende CU-08; el sistema conserva la revisión y sus decisiones anteriores y vincula la corrección con su antecedente." }
-      - { id: E3, requisito: RF-22, texto: "Corrección de un certificado ya cerrado: requiere reapertura autorizada y auditada; el sistema crea una revisión vinculada y preserva el original sin sobrescribirlo." }
-      - { id: E4, requisito: RF-09, texto: "Cantidad pendiente sin cobertura: no integra el certificado hasta que un movimiento presupuestario aprobado la cubra." }
-      - { id: E5, requisito: RNF-06, texto: "Recálculo: repetir el cálculo con la misma instantánea de cantidades, precios y parámetros devuelve exactamente el mismo importe." }
+      - { id: E1, requisito: RF-17, texto: "El actor no tiene rol admin ni miembro con acceso al ECMS: el sistema deniega la emisión." }
+      - { id: E2, requisito: RNF-06, texto: "Recálculo: repetir el cálculo con la misma instantánea de cantidades, precios y parámetros devuelve exactamente el mismo importe." }
   - id: CU-10
     nombre: Derivar documento financiero en ERP
     subsistema: B
-    actores: [ECMS, ERP, TES]
+    actores: [ECMS, ERP, TES, CLI]
     detallado: false
   - id: CU-11
     nombre: Proponer y aprobar movimiento presupuestario
     subsistema: A
-    actores: [ADM, SUP]
+    actores: [ADM, SUP, CLI]
     detallado: false
   - id: CU-12
     nombre: Registrar contrato de subcontrato
@@ -666,7 +677,7 @@ casos_uso:
     actores: [ADM]
     detallado: false
   - id: CU-13
-    nombre: Presentar medición de subcontrato
+    nombre: Consultar estado del subcontrato
     subsistema: B
     actores: [SUB]
     detallado: false
@@ -691,11 +702,8 @@ subsistemas:
   B: { nombre: "Certificación y Subcontratos", descripcion: "Valorización del avance medido, su emisión y la derivación al ERP." }
 
 relaciones_cu:
-  - { origen: CU-02, destino: CU-03, tipo: include }
-  - { origen: CU-09, destino: CU-07, tipo: include }
   - { origen: CU-09, destino: CU-10, tipo: include }
   - { origen: CU-14, destino: CU-10, tipo: include }
-  - { origen: CU-08, destino: CU-09, tipo: extend }
   - { origen: CU-11, destino: CU-05, tipo: extend }
 
 # ------------------------------------------------------------------------------
@@ -913,6 +921,7 @@ entidades:
       - { n: id, t: UUID, sql: "UUID", pk: true }
       - { n: cantidad, t: Decimal, sql: "NUMERIC(24,12)" }
       - { n: estado, t: String, sql: "VARCHAR(12)" }
+      - { n: causa, t: String, sql: "VARCHAR(16)", null: true }
       - { n: fechaRegistro, t: DateTime, sql: "TIMESTAMPTZ" }
   - id: movimiento_presupuestario
     nombre: MovimientoPresupuestario
@@ -1064,7 +1073,7 @@ relaciones:
   - { a: revision_certificado, b: linea_certificado, tipo: composicion, ca: "1", cb: "1..*", fk_en: linea_certificado, fk_col: revision_certificado_id }
   - { a: medicion_oficial, b: linea_certificado, tipo: asociacion, ca: "1", cb: "0..1", fk_en: linea_certificado, fk_col: medicion_oficial_id }
   - { a: linea_presupuesto, b: linea_certificado, tipo: asociacion, ca: "1", cb: "0..*", fk_en: linea_certificado, fk_col: linea_presupuesto_id }
-  - { a: revision_certificado, b: aprobacion, tipo: composicion, ca: "0..1", cb: "0..*", fk_en: aprobacion, fk_col: revision_certificado_id }
+  - { a: usuario, b: certificado, tipo: asociacion, ca: "0..1", cb: "0..*", fk_en: certificado, fk_col: emitido_por, rol: "emite", detalle: true }
   - { a: movimiento_presupuestario, b: aprobacion, tipo: composicion, ca: "0..1", cb: "0..*", fk_en: aprobacion, fk_col: movimiento_id }
   - { a: usuario, b: aprobacion, tipo: asociacion, ca: "1", cb: "0..*", fk_en: aprobacion, fk_col: actor_id, detalle: true }
   - { a: revision_certificado, b: retencion_aplicada, tipo: composicion, ca: "1", cb: "0..*", fk_en: retencion_aplicada, fk_col: revision_certificado_id }
@@ -1106,7 +1115,6 @@ componentes:
   - { id: aprobar_medicion_interactor, capa: control, nombre: AprobarMedicionInteractor }
   - { id: evaluar_saldo_servicio, capa: control, nombre: EvaluarSaldoServicio }
   - { id: emitir_certificado_interactor, capa: control, nombre: EmitirCertificadoInteractor }
-  - { id: verificar_separacion_funciones_servicio, capa: control, nombre: VerificarSeparacionFuncionesServicio }
   - { id: calcular_valorizacion_servicio, capa: control, nombre: CalcularValorizacionServicio }
   - { id: presupuesto_repositorio_sql, capa: adapter, contenedor: bd, nombre: PresupuestoRepositorioSQL }
   - { id: almacen_archivos_s3, capa: adapter, contenedor: archivos, nombre: AlmacenArchivosS3 }
@@ -1134,8 +1142,8 @@ clases_cu:
     puertos:  [i_medicion_repositorio, i_presupuesto_repositorio, i_auditoria_repositorio, i_reloj]
   CU-09:
     boundary: [emitir_certificado_controlador, certificado_presentador]
-    control:  [emitir_certificado_interactor, verificar_separacion_funciones_servicio, calcular_valorizacion_servicio]
-    entity:   [certificado, revision_certificado, linea_certificado, aprobacion, retencion_aplicada, configuracion_obra, fondo_retencion, valorizacion]
+    control:  [emitir_certificado_interactor, calcular_valorizacion_servicio]
+    entity:   [certificado, revision_certificado, linea_certificado, retencion_aplicada, configuracion_obra, fondo_retencion, valorizacion]
     puertos:  [i_certificado_repositorio, i_generador_documento, i_publicador_eventos, i_auditoria_repositorio, i_reloj]
 
 # ------------------------------------------------------------------------------
@@ -1146,12 +1154,12 @@ estados:
     inicial: Propuesta
     finales: [Reemplazada, Descartada]
     estados:
-      - { n: Propuesta,   d: "Importada y confirmada en su estructura; todavía no rige." }
+      - { n: Propuesta,   d: "Importada y registrada; espera la confirmación de estructura y la activación." }
       - { n: Vigente,     d: "Rige para medición, certificación y control de saldo." }
       - { n: Reemplazada, d: "Un movimiento aprobado generó una versión posterior; permanece consultable." }
-      - { n: Descartada,  d: "La importación no se confirmó; no llegó a regir." }
+      - { n: Descartada,  d: "El Administrador no confirmó su estructura; no llegó a regir." }
     transiciones:
-      - { de: Propuesta, a: Vigente, evento: "activar", guarda: "estructura confirmada" }
+      - { de: Propuesta, a: Vigente, evento: "confirmar estructura y activar", guarda: "estructura confirmada" }
       - { de: Propuesta, a: Descartada, evento: "descartar" }
       - { de: Vigente, a: Reemplazada, evento: "activar versión posterior" }
   medicion_oficial:
@@ -1162,23 +1170,18 @@ estados:
       - { n: Aprobada,   d: "El Responsable Técnico la validó; su cantidad cubierta es certificable." }
       - { n: Rechazada,  d: "Devuelta con motivo; no integra el acumulado físico." }
     transiciones:
-      - { de: Registrada, a: Aprobada, evento: "aprobar", guarda: "actor distinto del que registró" }
+      - { de: Registrada, a: Aprobada, evento: "aprobar" }
       - { de: Registrada, a: Rechazada, evento: "rechazar", guarda: "motivo informado" }
       - { de: Rechazada, a: Registrada, evento: "corregir y reenviar" }
   certificado:
     inicial: Borrador
-    finales: [Cerrado]
+    finales: [Emitido]
     estados:
-      - { n: Borrador, d: "Generado desde mediciones aprobadas elegibles; editable." }
-      - { n: Emitido,  d: "Presentado para conformidad técnica y autorización." }
-      - { n: Aprobado, d: "Conformado y autorizado por actores distintos; origina el documento financiero ERP." }
-      - { n: Cerrado,  d: "Período liquidado; el certificado y sus fuentes permanecen consultables." }
+      - { n: Borrador, d: "En preparación o corrección; todavía no se emitió. Editable." }
+      - { n: Emitido,  d: "Con número, fecha y actor; visible en el avance físico-financiero de la obra y publicado al ERP." }
     transiciones:
-      - { de: Borrador, a: Emitido, evento: "emitir revisión" }
-      - { de: Emitido, a: Borrador, evento: "devolver para corrección", guarda: "observación registrada" }
-      - { de: Emitido, a: Aprobado, evento: "autorizar", guarda: "conformidad técnica de un actor distinto" }
-      - { de: Aprobado, a: Cerrado, evento: "cerrar período" }
-      - { de: Cerrado, a: Borrador, evento: "reapertura autorizada", guarda: "auditada; crea revisión vinculada" }
+      - { de: Borrador, a: Emitido, evento: "emitir" }
+      - { de: Emitido, a: Borrador, evento: "corregir / crea revisión nueva y conserva la anterior" }
   movimiento_presupuestario:
     inicial: Propuesto
     finales: [Vigente, Rechazado]
@@ -1194,6 +1197,18 @@ estados:
       - { de: AprobadoInterno, a: AprobadoContractual, evento: "aprobar contractualmente" }
       - { de: AprobadoInterno, a: Rechazado, evento: "rechazar" }
       - { de: AprobadoContractual, a: Vigente, evento: "activar versión" }
+  documento_financiero_erp:
+    inicial: Registrado
+    finales: [Cobrado, Pagado]
+    estados:
+      - { n: Registrado, d: "Derivado de un certificado emitido: factura al cliente o pago al subcontratista." }
+      - { n: Cobrado,    d: "Finanzas y Tesorería registró el cobro de la factura." }
+      - { n: Aprobado,   d: "Finanzas y Tesorería aprobó el pago al subcontratista." }
+      - { n: Pagado,     d: "Finanzas y Tesorería ejecutó el pago." }
+    transiciones:
+      - { de: Registrado, a: Cobrado, evento: "registrar cobro", guarda: "tipo factura" }
+      - { de: Registrado, a: Aprobado, evento: "aprobar pago", guarda: "tipo pago" }
+      - { de: Aprobado, a: Pagado, evento: "ejecutar pago" }
 
 # ------------------------------------------------------------------------------
 # SECUENCIAS (diagrama de interacción). Derivan del mismo flujo de la especificación.
@@ -1234,7 +1249,7 @@ secuencias:
       - { de: TOT,  a: UC,   msg: "{informe_importacion}(diferencia, cuadra)", tipo: return }
       - { de: UC,   a: CTRL, msg: "previsualizacion(estructura, totales, incidencias)", tipo: return }
       - { de: CTRL, a: ING,  msg: "muestra estructura, ambos totales y datos inválidos", tipo: return }
-      - { de: ING,  a: CTRL, msg: "confirmarEstructura(rubros, unidades, agrupaciones)" }
+      - { de: ING,  a: CTRL, msg: "confirmarImportacion(solicitudId)" }
       - { de: CTRL, a: UC,   msg: "confirmar(solicitudId)" }
       - { de: UC,   a: VER,  msg: "crear(numero, estado = Propuesta)", tipo: create }
       - { de: UC,   a: REP,  msg: "guardarVersion(version)" }
@@ -1282,51 +1297,34 @@ secuencias:
       - { de: CTRL, a: SUP,  msg: "confirma la decisión y el acumulado actualizado", tipo: return }
   CU-09:
     participantes:
-      - { id: SUP,  tipo: actor }
-      - { id: ADM,  tipo: actor }
+      - { id: ING,  tipo: actor }
       - { id: CTRL, tipo: boundary,  ref: emitir_certificado_controlador }
       - { id: UC,   tipo: control,   ref: emitir_certificado_interactor }
-      - { id: SEP,  tipo: control,   ref: verificar_separacion_funciones_servicio }
       - { id: VLZ,  tipo: control,   ref: calcular_valorizacion_servicio }
       - { id: CREP, tipo: interface, ref: i_certificado_repositorio }
       - { id: DOC,  tipo: interface, ref: i_generador_documento }
       - { id: EVT,  tipo: interface, ref: i_publicador_eventos }
-      - { id: REV,  tipo: entity,    ref: revision_certificado }
-      - { id: APR,  tipo: entity,    ref: aprobacion }
       - { id: CER,  tipo: entity,    ref: certificado }
     mensajes:
-      - { de: SUP,  a: CTRL, msg: "abrirRevision(revisionId)" }
+      - { de: ING,  a: CTRL, msg: "abrirRevision(revisionId)" }
       - { de: CTRL, a: UC,   msg: "obtenerRevision(revisionId)" }
       - { de: UC,   a: CREP, msg: "buscarRevision(revisionId)" }
       - { de: CREP, a: UC,   msg: "{revision_certificado}", tipo: return }
       - { de: UC,   a: VLZ,  msg: "calcular(lineas, configuracionObra)" }
       - { de: VLZ,  a: UC,   msg: "{valorizacion}(subtotal, impuestos, retenciones, total)", tipo: return }
       - { de: UC,   a: CTRL, msg: "revisión con valorización y alertas", tipo: return }
-      - { de: CTRL, a: SUP,  msg: "muestra cantidades, valorización y alertas", tipo: return }
-      - { de: SUP,  a: CTRL, msg: "otorgarConformidadTecnica(revisionId)" }
-      - { de: CTRL, a: UC,   msg: "registrarAprobacion(revisionId, actorId, CONFORMIDAD_TECNICA)" }
-      - { de: UC,   a: APR,  msg: "crear(tipo, actorId, fecha)", tipo: create }
-      - { de: UC,   a: CREP, msg: "guardar(revision)" }
-      - { de: ADM,  a: CTRL, msg: "autorizarEmision(revisionId)" }
-      - { de: CTRL, a: UC,   msg: "emitir(revisionId, actorId)" }
-      - { de: UC,   a: REV,  msg: "aprobaciones()" }
-      - { de: REV,  a: UC,   msg: "conformidad y autorización registradas", tipo: return }
-      - { de: UC,   a: SEP,  msg: "verificar(aprobaciones, actorId)" }
-      - { frag: alt, etiqueta: "falta una aprobación o ambas son del mismo actor (RF-17)" }
-      - { de: SEP,  a: UC,   msg: "EmisionBloqueada(motivo)", tipo: return }
-      - { de: UC,   a: CTRL, msg: "rechaza la emisión e indica la aprobación faltante", tipo: return }
-      - { frag: else, etiqueta: "conformidad y autorización de actores distintos" }
-      - { de: SEP,  a: UC,   msg: "separación verificada", tipo: return }
+      - { de: CTRL, a: ING,  msg: "muestra cantidades, valorización y alertas", tipo: return }
+      - { de: ING,  a: CTRL, msg: "emitirCertificado(revisionId, destinatario)" }
+      - { de: CTRL, a: UC,   msg: "emitir(revisionId, destinatario, actorId)" }
       - { de: UC,   a: CREP, msg: "siguienteNumero(obraId)" }
       - { de: CREP, a: UC,   msg: "numero", tipo: return }
-      - { de: UC,   a: CER,  msg: "aprobar(numero, fecha, destinatario)" }
+      - { de: UC,   a: CER,  msg: "emitir(numero, fecha, destinatario, actorId)" }
       - { de: UC,   a: CREP, msg: "guardar(certificado)" }
       - { de: UC,   a: DOC,  msg: "exportar(revision, formato)" }
       - { de: DOC,  a: UC,   msg: "archivo nuevo XLSX o PDF", tipo: return }
-      - { de: UC,   a: EVT,  msg: "publicar(CertificadoAprobado(certificadoId))", tipo: async }
-      - { frag: end }
+      - { de: UC,   a: EVT,  msg: "publicar(CertificadoEmitido(certificadoId))", tipo: async }
       - { de: UC,   a: CTRL, msg: "resultado de la emisión", tipo: return }
-      - { de: CTRL, a: ADM,  msg: "confirma número, fecha y archivo generado", tipo: return }
+      - { de: CTRL, a: ING,  msg: "confirma número, fecha y archivo generado", tipo: return }
 
 # ------------------------------------------------------------------------------
 # REFERENCIAS (APA). Alimentan la última sección del documento.
@@ -1367,8 +1365,8 @@ decisiones:
     hallazgo: >-
       El catálogo nombra un «responsable técnico» que no existe como rol en el dominio.
     resolucion: >-
-      Se asimila al Supervisor y se reparte la responsabilidad en tres actores: el Ingeniero de Obra
-      registra, el Responsable Técnico aprueba y el Administrador autoriza la emisión.
+      Se asimila al Supervisor de la obra: es el actor que aprueba o rechaza las mediciones y cierra
+      el período. Es un actor, no un rol: en el sistema opera como miembro o admin (D-08).
   - id: D-04
     tema: Idempotencia de la importación
     hallazgo: >-
@@ -1397,19 +1395,26 @@ decisiones:
     tema: Estados del certificado
     hallazgo: >-
       La documentación describe el certificado con tres, cuatro y cinco estados según el documento,
-      y trata el rechazo unas veces como estado y otras como transición.
+      y trata el rechazo unas veces como estado y otras como transición. El modelo anterior además
+      cerraba el certificado al cerrar el período, aunque la emisión exigía el período ya cerrado.
     resolucion: >-
-      Se unifica en Borrador, Emitido, Aprobado y Cerrado. El rechazo es la transición de Emitido a
-      Borrador. La reapertura de un certificado cerrado es autorizada y auditada, crea una revisión
-      vinculada y preserva el original.
+      El certificado es un registro de avance, no un trámite: tiene dos estados, Borrador y Emitido,
+      y no se cierra por período. Corregir un certificado emitido crea una revisión nueva en
+      Borrador vinculada a la anterior, que se conserva. Su tipo es interno o subcontrato:
+      los ítems de una adenda se certifican dentro del mismo certificado de avance (D-17). El interno
+      se refleja en el avance físico-financiero de la obra y origina la factura al cliente.
   - id: D-08
     tema: Modelo de permisos
     hallazgo: >-
       Una parte de la documentación define una matriz de roles y otra afirma que la aplicación no
       debe definir ningún rol.
     resolucion: >-
-      Se adopta la matriz de roles, porque RNF-01 exige comprobar el rol y RF-17 exige separación de
-      funciones entre quien conforma y quien autoriza.
+      Se adopta un conjunto mínimo de roles, porque RNF-01 exige comprobar el rol: admin, miembro y
+      visualizador, más miembro ERP (contadores) y miembro ECMS (asistente o fiscalizador de campo).
+      Un actor no es un rol: el Ingeniero de Obra opera como miembro, el Responsable Técnico como
+      miembro o admin, el Administrador (gerente) como admin, un auditor como visualizador y
+      Finanzas y Tesorería como miembro ERP. El Subcontratista accede solo a su contrato (RNF-02).
+      No se impone separación de funciones entre roles.
   - id: D-09
     tema: Propiedad del contrato de subcontrato
     hallazgo: >-
@@ -1440,6 +1445,77 @@ decisiones:
     resolucion: >-
       No hay nada que excluir por ese concepto. El alcance se acota explícitamente a seis módulos y
       se declaran los excluidos con su motivo.
+  - id: D-13
+    tema: Activación de la versión de presupuesto
+    hallazgo: >-
+      CU-03 figuraba con el Administrador, pero CU-02 lo incluía y su flujo hacía que el Ingeniero de
+      Obra solicitara la activación.
+    resolucion: >-
+      Se separan: CU-02 termina con la versión en Propuesta y CU-03, del Administrador, confirma la
+      estructura (RF-05) y la activa o la descarta. Se quita el include CU-02 → CU-03, porque
+      activar es una meta propia del Administrador y no un paso común de varios casos.
+  - id: D-14
+    tema: Relaciones entre casos de uso de certificación
+    hallazgo: >-
+      CU-09 incluía CU-07 aunque su precondición exige que el borrador ya exista, y CU-08 extendía
+      CU-09 aunque la corrección ocurre después de la emisión.
+    resolucion: >-
+      Se quitan ambas relaciones: generar el borrador (CU-07) y corregir un emitido (CU-08) son
+      metas propias que preceden o siguen a la emisión. Se mantienen CU-09 y CU-14 incluyendo CU-10
+      (subobjetivo común sin actor humano propio) y CU-11 extendiendo CU-05 en el exceso sobre saldo.
+  - id: D-15
+    tema: Motores ECMS y ERP como actores
+    hallazgo: >-
+      El modelo de casos de uso declara al Motor de Ingeniería (CU-10, CU-15) y al Motor ERP (CU-10,
+      CU-14) como actores sistema, mientras las vistas C4 los ubican como contenedores de Obra Studio.
+    resolucion: >-
+      Se mantienen como actores de tipo sistema, marcados interno, para representar los procesos que
+      cada motor ejecuta sin intervención de un usuario: el cálculo por vía, la publicación del
+      evento y la derivación de facturas y pagos. La vista C4 describe la estructura y no los
+      objetivos, por eso los ubica dentro del sistema.
+  - id: D-16
+    tema: Requisitos redefinidos respecto del catálogo
+    hallazgo: >-
+      RF-16, RF-17, RF-22 y RNF-05 suponían un certificado con revisión por dos personas, cierre y
+      reapertura autorizada; las excepciones de CU-09 citaban RNF-06 sin que el catálogo lo marcara;
+      RF-24 hacía que el subcontratista presentara mediciones que mide y carga el Ingeniero de Obra.
+    resolucion: >-
+      Se redefinen RF-16, RF-17, RF-22 y RNF-05 para el certificado de dos estados y los roles mínimos (D-07, D-08):
+      RF-16 corrige mediante revisión nueva, RF-17 limita quién emite, RF-22 conserva solo la
+      certificación de pendientes cubiertos y RNF-05 habla de certificados emitidos. RNF-06 se
+      marca en CU-09, que calcula la valorización. RF-24 queda como consulta del subcontratista y
+      RNF-09 deja de marcarse en CU-13, que ya no tiene formulario de medición (D-18).
+  - id: D-17
+    tema: Adendas y facturación al cliente
+    hallazgo: >-
+      No estaba definido cómo se certifica una adenda ni desde qué certificado factura el ERP al
+      cliente. Una adenda no siempre es un pedido del cliente: el exceso medido puede deberse a un
+      retrabajo, un atraso, un fallo o un cambio.
+    resolucion: >-
+      La adenda no tiene certificado propio: sus ítems se miden como cualquier otro y se certifican
+      en el mismo certificado de avance, validados contra el presupuesto vigente (presupuesto más
+      movimientos). El exceso sobre el saldo se detecta en CU-05 como sobrecosto
+      ({propuesta_pendiente}) y en CU-11 se clasifica por causa: adenda, cubierta por un
+      {movimiento_presupuestario}, o retrabajo, atraso, fallo o cambio. El ERP factura al cliente a
+      partir del certificado interno.
+  - id: D-18
+    tema: Medición del trabajo subcontratado
+    hallazgo: >-
+      CU-13 hacía que el Subcontratista presentara mediciones, mientras D-05 establece una sola
+      {medicion_oficial} por ítem y período, con el ejecutor como atributo.
+    resolucion: >-
+      El Ingeniero de Obra mide en terreno lo ejecutado por el subcontratista y lo registra en CU-04
+      con ejecutor subcontratado. CU-13 pasa a «Consultar estado del subcontrato» y RF-24 se
+      redefine como consulta (D-16).
+  - id: D-19
+    tema: Facturas y pagos dentro del sistema
+    hallazgo: >-
+      El alcance incluía los módulos erp.invoices y erp.payments, pero las vistas C4 y el catálogo
+      de actores trataban al ERP como sistema externo.
+    resolucion: >-
+      Facturas y pagos son parte de Obra Studio: el ERP es un contenedor del sistema (Motor ERP) y
+      se modela el ciclo del {documento_financiero_erp}: Registrado, y luego Cobrado si es factura o
+      Aprobado y Pagado si es pago, a cargo de Finanzas y Tesorería en CU-10.
 
 # ------------------------------------------------------------------------------
 # TRAZABILIDAD MODELO -> IMPLEMENTACIÓN (para el archivo de apoyo).
@@ -1457,4 +1533,4 @@ trazabilidad:
   - { clase: periodo,               estado: especificado, nota: "Documentada en el dominio; sin implementación." }
   - { clase: certificado,           estado: especificado, nota: "Módulo de certificaciones presente en el catálogo, sin implementación." }
   - { clase: subcontrato,           estado: especificado, nota: "Módulo de subcontratos presente en el catálogo, sin implementación." }
-  - { clase: documento_financiero_erp, estado: especificado, nota: "Factura y pago del ERP; fuera del alcance implementado." }
+  - { clase: documento_financiero_erp, estado: especificado, nota: "Factura al cliente y pago al subcontratista; dentro del alcance del modelo, sin implementación." }

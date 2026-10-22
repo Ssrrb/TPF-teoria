@@ -12,7 +12,7 @@ title Caso de Uso CU-02 — Importar presupuesto y cronograma
 package "Adaptadores de interfaz" <<Rectangle>> {
   class ImportarPresupuestoControlador <<Boundary>> {
     +importarPresupuesto(obraId, archivo)
-    +confirmarEstructura(rubros, unidades, agrupaciones)
+    +confirmarImportacion(solicitudId)
   }
   class ImportacionPresentador <<Boundary>> {
     

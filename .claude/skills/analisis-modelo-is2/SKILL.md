@@ -25,7 +25,7 @@ Cada caso de uso abre con el modelo C4 como explicación introductoria, de lo ge
 |---|---|---|---|
 | 1 | **Contexto C4**: quién usa el caso y con qué sistemas externos interactúa | `modelo/out/c4/C4-CUxx-contexto.png` | los 16 casos |
 | 2 | **Contenedores C4**: qué contenedores (web, motor, base de datos, archivos, ERP) intervienen, deducido de los puertos que usa el caso | `modelo/out/c4/C4-CUxx-contenedores.png` | solo casos detallados |
-| 3 | Ficha: descripción, precondiciones, poscondiciones, flujo normal, excepciones | `casos_uso[]` del YAML | todos; los detallados llevan flujo completo |
+| 3 | Ficha: descripción, precondiciones, poscondiciones, flujo normal, flujo alternativo, excepciones | `casos_uso[]` del YAML | todos; los detallados llevan flujo completo |
 | 4 | **Modelo estructural**: clases por capa (Boundary, Control, Entity) | `modelo/out/NN-CU-xx-clases.png` | solo detallados |
 | 5 | **Modelo dinámico**: secuencia UML y vista C4 dinámica entre componentes | `modelo/out/NN-CU-xx-secuencia.png`, `modelo/out/c4/C4-CUxx.png` | solo detallados |
 
@@ -37,7 +37,8 @@ Las vistas C4 del sistema completo (`C4-Contexto`, `C4-Contenedores`, `C4-Compon
 
 - **Cada requisito en al menos un caso de uso y cada caso de uso con al menos un requisito.** El validador lo exige; la matriz cierra en ambos sentidos.
 - **Los requisitos transversales** (control de acceso, idioma) aparecen en todos los casos; está bien, pero no confundirlos con falta de análisis.
-- **La generalización de actores es opcional.** El hijo hereda todos los casos del padre; solo se justifica para acceso común y nunca si rompe una separación de funciones (RF-17, CU-05). Hoy el YAML no declara jerarquía de actores ni hay generador para ese diagrama ni para el de alto nivel: si se piden, agregar la jerarquía al YAML y el generador a `gen/gen_puml.py`, y avisar de la decisión.
+- **Un actor no es un rol.** Los roles del sistema son pocos: admin, miembro y visualizador, más miembro ERP y miembro ECMS (D-08). No imponer separación de funciones ni flujos de aprobación que ningún requisito pida; ante una contradicción, preferir la solución con menos estados y reglas.
+- **La generalización de actores es opcional.** El hijo hereda todos los casos del padre; solo se justifica para acceso común. Hoy el YAML no declara jerarquía de actores ni hay generador para ese diagrama ni para el de alto nivel: si se piden, agregar la jerarquía al YAML y el generador a `gen/gen_puml.py`, y avisar de la decisión.
 - **Lo que depende del estudiante o del docente se deja marcado, no se inventa:** portada (grupo, alumnos), conteos de requisitos agregados, eliminados y redefinidos, y la validación del diagrama con los actores.
 - **Un solo estilo de numeración** (RF-01) en tabla, matriz y fichas.
 - **Los generadores no se tocan para arreglar un dato.** Si un diagrama sale mal por un dato, se corrige en el YAML; si sale mal por la forma de dibujarlo, se corrige el generador y se avisa.

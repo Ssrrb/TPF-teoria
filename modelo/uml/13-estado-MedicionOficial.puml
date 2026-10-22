@@ -12,7 +12,7 @@ state "Rechazada" as Rechazada
 Rechazada : Devuelta con motivo; no integra el acumulado físico.
 
 [*] --> Registrada
-Registrada --> Aprobada : aprobar [actor distinto del que registró]
+Registrada --> Aprobada : aprobar
 Registrada --> Rechazada : rechazar [motivo informado]
 Rechazada --> Registrada : corregir y reenviar
 Aprobada --> [*]

@@ -5,20 +5,16 @@ skinparam defaultFontName Liberation Sans
 skinparam sequenceMessageAlign left
 title Caso de Uso CU-09 — Emitir certificado de avance
 
-actor "Responsable Técnico" as SUP
-actor "Administrador" as ADM
+actor "Ingeniero de Obra" as ING
 participant "<<Boundary>>\nEmitirCertificadoControlador" as CTRL
 participant "<<Control>>\nEmitirCertificadoInteractor" as UC
-participant "<<Control>>\nVerificarSeparacionFuncionesServicio" as SEP
 participant "<<Control>>\nCalcularValorizacionServicio" as VLZ
 participant "<<Interface>>\nICertificadoRepositorio" as CREP
 participant "<<Interface>>\nIGeneradorDocumento" as DOC
 participant "<<Interface>>\nIPublicadorEventos" as EVT
-participant "<<Entity>>\nRevisionCertificado" as REV
-participant "<<Entity>>\nAprobacion" as APR
 participant "<<Entity>>\nCertificado" as CER
 
-SUP -> CTRL : abrirRevision(revisionId)
+ING -> CTRL : abrirRevision(revisionId)
 activate CTRL
 CTRL -> UC : obtenerRevision(revisionId)
 activate UC
@@ -32,52 +28,29 @@ VLZ --> UC : Valorizacion(subtotal, impuestos, retenciones, total)
 deactivate VLZ
 UC --> CTRL : revisión con valorización y alertas
 deactivate UC
-CTRL --> SUP : muestra cantidades, valorización y alertas
+CTRL --> ING : muestra cantidades, valorización y alertas
 deactivate CTRL
-SUP -> CTRL : otorgarConformidadTecnica(revisionId)
+ING -> CTRL : emitirCertificado(revisionId, destinatario)
 activate CTRL
-CTRL -> UC : registrarAprobacion(revisionId, actorId, CONFORMIDAD_TECNICA)
+CTRL -> UC : emitir(revisionId, destinatario, actorId)
 activate UC
-UC -> APR ** : crear(tipo, actorId, fecha)
-UC -> CREP : guardar(revision)
+UC -> CREP : siguienteNumero(obraId)
 activate CREP
-ADM -> CTRL : autorizarEmision(revisionId)
-activate CTRL
-CTRL -> UC : emitir(revisionId, actorId)
-activate UC
-UC -> REV : aprobaciones()
-activate REV
-REV --> UC : conformidad y autorización registradas
-deactivate REV
-UC -> SEP : verificar(aprobaciones, actorId)
-activate SEP
-alt falta una aprobación o ambas son del mismo actor (RF-17)
-  SEP --> UC : EmisionBloqueada(motivo)
-  deactivate SEP
-  UC --> CTRL : rechaza la emisión e indica la aprobación faltante
-  deactivate UC
-else conformidad y autorización de actores distintos
-  SEP --> UC : separación verificada
-  UC -> CREP : siguienteNumero(obraId)
-  activate CREP
-  CREP --> UC : numero
-  deactivate CREP
-  UC -> CER : aprobar(numero, fecha, destinatario)
-  activate CER
-  UC -> CREP : guardar(certificado)
-  activate CREP
-  UC -> DOC : exportar(revision, formato)
-  activate DOC
-  DOC --> UC : archivo nuevo XLSX o PDF
-  deactivate DOC
-  UC ->> EVT : publicar(CertificadoAprobado(certificadoId))
-end
+CREP --> UC : numero
+deactivate CREP
+UC -> CER : emitir(numero, fecha, destinatario, actorId)
+activate CER
+UC -> CREP : guardar(certificado)
+activate CREP
+UC -> DOC : exportar(revision, formato)
+activate DOC
+DOC --> UC : archivo nuevo XLSX o PDF
+deactivate DOC
+UC ->> EVT : publicar(CertificadoEmitido(certificadoId))
 deactivate CREP
 deactivate CER
-deactivate CTRL
-deactivate CREP
 UC --> CTRL : resultado de la emisión
 deactivate UC
-CTRL --> ADM : confirma número, fecha y archivo generado
+CTRL --> ING : confirma número, fecha y archivo generado
 deactivate CTRL
 @enduml

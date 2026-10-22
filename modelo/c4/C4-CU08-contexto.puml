@@ -1,10 +1,10 @@
 @startuml
 !include <C4/C4_Context>
 LAYOUT_WITH_LEGEND()
-title CU-08 — Devolver borrador para corrección: contexto
+title CU-08 — Corregir certificado emitido: contexto
 
-Person(SUP, "Responsable Técnico", "Supervisor de la obra.")
+Person(ING, "Ingeniero de Obra", "Carga el presupuesto y el cronograma de la obra, registra la medición oficial de cada ítem del período con su evidencia, genera y emite los certificados de avance y los corrige.")
 System(obra, "Obra Studio", "Gestiona presupuesto, medición, certificación y costos de obra.")
 
-Rel(SUP, obra, "Devolver borrador para corrección")
+Rel(ING, obra, "Corregir certificado emitido")
 @enduml
